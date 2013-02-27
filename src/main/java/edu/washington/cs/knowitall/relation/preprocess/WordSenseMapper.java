@@ -142,10 +142,20 @@ public class WordSenseMapper {
   private void outputMap(Map<String, Map<String, Integer>> map, BufferedWriter writer) {
     for (String key : map.keySet()) {
       Map<String, Integer> valueCounts = map.get(key);
+      int valueSum = 0;
+      for (int count : valueCounts.values()) {
+        valueSum += count;
+      }
       for (String value : valueCounts.keySet()) {
         int count = valueCounts.get(value);
+        double cprob = 0;
+        if (valueSum != 0) {
+          cprob = (double) count / valueSum;
+        }
+        double smoothedCprob = (double) (count + 1) / (valueSum + valueCounts.size());
         String line = new StringBuilder(key).append("\t").append(value).append("\t")
-          .append(count).append("\n").toString();
+          .append(count).append("\t").append(cprob).append("\t").append(smoothedCprob).append("\n")
+          .toString();
         try {
           writer.write(line);
         } catch (IOException e) {
