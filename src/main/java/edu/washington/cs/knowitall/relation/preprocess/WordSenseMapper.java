@@ -6,8 +6,10 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -19,6 +21,7 @@ import edu.mit.jwi.item.ISenseKey;
 import edu.mit.jwi.item.ISynset;
 import edu.mit.jwi.item.ISynsetID;
 import edu.mit.jwi.item.IWord;
+import edu.mit.jwi.item.SenseKey;
 import edu.mit.jwi.item.SynsetID;
 
 /**
@@ -33,15 +36,12 @@ import edu.mit.jwi.item.SynsetID;
 public class WordSenseMapper {
   BufferedReader mapReader;
   IDictionary wordNet;
-  BufferedWriter outputWriter;
-  BufferedWriter inverseWriter;
+  String outputPath;
   
-  public WordSenseMapper(BufferedReader mapReader, IDictionary wordNet,
-      BufferedWriter outputWriter, BufferedWriter inverseWriter) {
+  public WordSenseMapper(BufferedReader mapReader, IDictionary wordNet, String outputPath) {
     this.mapReader = mapReader;
     this.wordNet = wordNet;
-    this.outputWriter = outputWriter;
-    this.inverseWriter = inverseWriter;
+    this.outputPath = outputPath;
   }
   
   /**
@@ -102,6 +102,7 @@ public class WordSenseMapper {
         ISenseEntry senseEntry = wordNet.getSenseEntry(senseKey);
         ISynsetID id = new SynsetID(senseEntry.getOffset(), senseEntry.getPOS());
         ISynset synset = wordNet.getSynset(id);
+        System.out.println(senseEntry.getOffset() == synset.getOffset());
         for (IWord word : synset.getWords()) {
           String lemma = word.getLemma();
           int wordCount = 0;
@@ -141,6 +142,91 @@ public class WordSenseMapper {
   }
   
   /**
+   * Makes a table where the columns are: PropBank sense, WordNet sense key, WordNet sense
+   * frequency, term, term frequency (columns bundled together in SenseTableEntry).
+   * 
+   * The term frequency is, in fact, just the same as the frequency of the WordNet sense with the
+   * same offset, but different term. For example, "anticipate" and "expect" both have the same
+   * WordNet sense with offset 00721658, but there are two different sense entries for that offset:
+   * expect%2:31:00:: and anticipate%2:31:00::. Those sense entries have different frequencies - 204
+   * and 8, respectively. Technically this information is redundant, because it is elsewhere in the
+   * table, but it may prove convenient anyway. 
+   * 
+   * @param senseIds
+   * @return
+   */
+  private List<SenseTableEntry> makeSenseTable(Map<String, Set<ISenseKey>> senseIds) {
+    List<SenseTableEntry> senseTable = new ArrayList<SenseTableEntry>();
+    for (String propBankSense : senseIds.keySet()) {
+      for (ISenseKey senseKey : senseIds.get(propBankSense)) {
+        ISenseEntry senseEntry = wordNet.getSenseEntry(senseKey);
+        ISynsetID id = new SynsetID(senseEntry.getOffset(), senseEntry.getPOS());
+        ISynset synset = wordNet.getSynset(id);
+        for (IWord word : synset.getWords()) {
+          ISenseKey termSenseKey = new SenseKey(word.getLemma(), word.getLexicalID(), synset);
+          ISenseEntry termSenseEntry = wordNet.getSenseEntry(termSenseKey);
+          int termFrequency = termSenseEntry.getTagCount();
+          senseTable.add(new SenseTableEntry(
+            propBankSense, senseKey, senseEntry.getTagCount(), word.getLemma(), termFrequency,
+            termSenseKey
+          ));
+        }
+      }
+    }
+    return senseTable;
+  }
+  
+  /**
+   * Wrapper class for entries in the sense table.
+   */
+  class SenseTableEntry {
+    String propBankSense;
+    ISenseKey senseKey;
+    int senseFrequency;
+    String term;
+    int termFrequency;
+    ISenseKey termSenseKey;
+    
+    public SenseTableEntry(String propBankSense, ISenseKey senseKey, int senseFrequency,
+        String term, int termFrequency, ISenseKey termSenseKey) {
+      super();
+      this.propBankSense = propBankSense;
+      this.senseKey = senseKey;
+      this.senseFrequency = senseFrequency;
+      this.term = term;
+      this.termFrequency = termFrequency;
+      this.termSenseKey = termSenseKey;
+    }
+    public String getPropBankSense() {
+      return propBankSense;
+    }
+    public ISenseKey getSenseKey() {
+      return senseKey;
+    }
+    public int getSenseFrequency() {
+      return senseFrequency;
+    }
+    public String getTerm() {
+      return term;
+    }
+    public int getTermFrequency() {
+      return termFrequency;
+    }
+    public ISenseKey getTermSenseKey() {
+      return termSenseKey;
+    }
+    @Override
+    public String toString() {
+      StringBuilder builder = new StringBuilder();
+      builder.append("SenseTableEntry [propBankSense=").append(propBankSense).append(", senseKey=")
+          .append(senseKey).append(", senseFrequency=").append(senseFrequency).append(", term=")
+          .append(term).append(", termFrequency=").append(termFrequency).append(", termSenseKey=")
+          .append(termSenseKey).append("]");
+      return builder.toString();
+    }
+  }
+  
+  /**
    * Flatten the synonym/inverse map into a tab-separated file with columns: PropBank sense, string,
    * count.
    */
@@ -158,8 +244,11 @@ public class WordSenseMapper {
           cprob = (double) count / valueSum;
         }
         double smoothedCprob = (double) (count + 1) / (valueSum + valueCounts.size());
-        String line = new StringBuilder(key).append("\t").append(value).append("\t")
-          .append(count).append("\t").append(cprob).append("\t").append(smoothedCprob).append("\n")
+        String line = new StringBuilder(key).append("\t")
+          .append(value).append("\t")
+          .append(count).append("\t")
+          .append(cprob).append("\t")
+          .append(smoothedCprob).append("\n")
           .toString();
         try {
           writer.write(line);
@@ -171,14 +260,49 @@ public class WordSenseMapper {
   }
   
   /**
+   * Print out the sense table
+   */
+  private void outputSenseTable(List<SenseTableEntry> senseTable, BufferedWriter writer) {
+    for (SenseTableEntry entry : senseTable) {
+      String line = new StringBuilder(entry.getPropBankSense()).append("\t")
+        .append(entry.getSenseKey()).append("\t")
+        .append(entry.getSenseFrequency()).append("\t")
+        .append(entry.getTerm()).append("\t")
+        .append(entry.getTermFrequency()).append("\t")
+        .append(entry.getTermSenseKey()).append("\n")
+        .toString();
+      try {
+        writer.write(line);
+      } catch (IOException e) {
+        throw new RuntimeException("Error writing sense table. ", e);
+      }
+    }
+  }
+  
+  /**
    * Execute the program.
    */
   public void run() {
     Map<String, Set<ISenseKey>> senseIds = readMapping(mapReader);
     Map<String, Map<String, Integer>> synonymMap = makeSynonymMap(senseIds);
     Map<String, Map<String, Integer>> inverseMap = makeInverseMap(synonymMap);
-    outputMap(synonymMap, outputWriter);
-    outputMap(inverseMap, inverseWriter);
+    List<SenseTableEntry> senseTable = makeSenseTable(senseIds);
+    String inversePath = outputPath + "-inverse";
+    String tablePath = outputPath + "-table";
+    BufferedWriter outputWriter;
+    try {
+      outputWriter = new BufferedWriter(new FileWriter(outputPath));
+      BufferedWriter inverseWriter = new BufferedWriter(new FileWriter(inversePath));
+      BufferedWriter tableWriter = new BufferedWriter(new FileWriter(tablePath));
+      outputMap(synonymMap, outputWriter);
+      outputMap(inverseMap, inverseWriter);
+      outputSenseTable(senseTable, tableWriter);
+      outputWriter.close();
+      inverseWriter.close();
+      tableWriter.close();
+    } catch (IOException e) {
+      throw new RuntimeException("Error writing output files.", e);
+    }
   }
   
   /**
@@ -199,19 +323,14 @@ public class WordSenseMapper {
     String pbToWnPath = args[0];
     String wordNetPath = args[1];
     String outputFilePath = args[2];
-    String inverseFilePath = args[2] + "-inverse";
 
     try {
       BufferedReader mapReader = new BufferedReader(new FileReader(pbToWnPath));
       IDictionary wordNet = new Dictionary(new File(wordNetPath));
       wordNet.open();
-      BufferedWriter outputWriter = new BufferedWriter(new FileWriter(outputFilePath));
-      BufferedWriter inverseWriter = new BufferedWriter(new FileWriter(inverseFilePath));
-      WordSenseMapper mapper = new WordSenseMapper(mapReader, wordNet, outputWriter, inverseWriter);
+      WordSenseMapper mapper = new WordSenseMapper(mapReader, wordNet, outputFilePath);
       mapper.run();
       mapReader.close();
-      outputWriter.close();
-      inverseWriter.close();
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
