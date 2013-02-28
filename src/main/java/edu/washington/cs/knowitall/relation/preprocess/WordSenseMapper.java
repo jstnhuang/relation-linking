@@ -87,7 +87,8 @@ public class WordSenseMapper {
   
   /**
    * Given the PropBank sense to WordNet sense mapping, expand the synonyms from the WordNet sense
-   * and add each to the synonym map, along with its count.
+   * and add each to the synonym map, along with its count. This gives us a map from PropBank senses
+   * to terms, as well as the count of a term given the PropBank sense.
    */
   private Map<String, Map<String, Integer>> makeSynonymMap(Map<String, Set<ISenseKey>> senseIds) {
     Map<String, Map<String, Integer>> synonymMap = new HashMap<String, Map<String, Integer>>();
@@ -115,6 +116,10 @@ public class WordSenseMapper {
     return synonymMap;
   }
   
+  /**
+   * Creates the inverse map of what {@link makeSynonymMap} gives us. This map goes from terms to
+   * PropBank senses, and gives the count of a PropBank sense given the term.  
+   */
   private Map<String, Map<String, Integer>> makeInverseMap(Map<String, Map<String, Integer>> synonymMap) {
     Map<String, Map<String, Integer>> inverseMap = new HashMap<String, Map<String, Integer>>();
     for (String propBankSense : synonymMap.keySet()) {
