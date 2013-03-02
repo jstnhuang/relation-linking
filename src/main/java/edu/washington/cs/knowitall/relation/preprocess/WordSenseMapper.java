@@ -16,11 +16,13 @@ import java.util.Set;
 import edu.mit.jwi.Dictionary;
 import edu.mit.jwi.IDictionary;
 import edu.mit.jwi.data.parse.SenseKeyParser;
+import edu.mit.jwi.item.IPointer;
 import edu.mit.jwi.item.ISenseEntry;
 import edu.mit.jwi.item.ISenseKey;
 import edu.mit.jwi.item.ISynset;
 import edu.mit.jwi.item.ISynsetID;
 import edu.mit.jwi.item.IWord;
+import edu.mit.jwi.item.Pointer;
 import edu.mit.jwi.item.SenseKey;
 import edu.mit.jwi.item.SynsetID;
 
@@ -37,6 +39,10 @@ public class WordSenseMapper {
   BufferedReader mapReader;
   IDictionary wordNet;
   String outputPath;
+  /** Maps PropBank senses to sets of WordNet sense keys. */
+  Map<String, Set<ISenseKey>> senseIds;
+  /** Maps WordNet synset IDs (from the sense keys of senseIds) to PropBank senses. */
+  Map<ISynsetID, Set<String>> senseIdsInverse;
   
   public WordSenseMapper(BufferedReader mapReader, IDictionary wordNet, String outputPath) {
     this.mapReader = mapReader;
@@ -51,11 +57,10 @@ public class WordSenseMapper {
    * WordNet senses. The PropBank senses and WordNet senses are separated by spaces. Also, assumes
    * the WordNet senses are missing the last two colon-separated fields regarding the head word, so
    * we just add "::" to the end of each.
-   * 
-   * @return A map from PropBank senses to the set of all WordNet senses associated with it.
    */
-  private Map<String, Set<ISenseKey>> readMapping(BufferedReader mapReader) {
-    Map<String, Set<ISenseKey>> senseIds = new HashMap<String, Set<ISenseKey>>();
+  private void readMapping(BufferedReader mapReader) {
+    senseIds = new HashMap<String, Set<ISenseKey>>();
+    senseIdsInverse = new HashMap<ISynsetID, Set<String>>();
     try {
       mapReader.readLine();
       while(mapReader.ready()) {
@@ -68,6 +73,7 @@ public class WordSenseMapper {
             if (wordNetString.startsWith("?")) {
               wordNetString = wordNetString.substring(1);
             }
+            
             ISenseKey senseKey = SenseKeyParser.getInstance().parseLine(wordNetString + "::");
             if (senseIds.containsKey(propBankSense)) {
               senseIds.get(propBankSense).add(senseKey);
@@ -76,13 +82,22 @@ public class WordSenseMapper {
               senseKeys.add(senseKey);
               senseIds.put(propBankSense, senseKeys);
             }
+            
+            ISenseEntry senseEntry = wordNet.getSenseEntry(senseKey);
+            ISynsetID synsetId = new SynsetID(senseEntry.getOffset(), senseEntry.getPOS());
+            if (senseIdsInverse.containsKey(synsetId)) {
+              senseIdsInverse.get(synsetId).add(propBankSense);
+            } else {
+              Set<String> propBankSenses = new HashSet<String>();
+              propBankSenses.add(propBankSense);
+              senseIdsInverse.put(synsetId, propBankSenses);
+            }
           }
         }
       }
     } catch (IOException e) {
       throw new RuntimeException("Error reading mapping file.", e);
     }
-    return senseIds;
   }
   
   /**
@@ -90,7 +105,7 @@ public class WordSenseMapper {
    * and add each to the synonym map, along with its count. This gives us a map from PropBank senses
    * to terms, as well as the count of a term given the PropBank sense.
    */
-  private Map<String, Map<String, Integer>> makeSynonymMap(Map<String, Set<ISenseKey>> senseIds) {
+  private Map<String, Map<String, Integer>> makeSynonymMap() {
     Map<String, Map<String, Integer>> synonymMap = new HashMap<String, Map<String, Integer>>();
     for (String propBankSense : senseIds.keySet()) {
       Map<String, Integer> wordCounts = new HashMap<String, Integer>();
@@ -102,7 +117,6 @@ public class WordSenseMapper {
         ISenseEntry senseEntry = wordNet.getSenseEntry(senseKey);
         ISynsetID id = new SynsetID(senseEntry.getOffset(), senseEntry.getPOS());
         ISynset synset = wordNet.getSynset(id);
-        System.out.println(senseEntry.getOffset() == synset.getOffset());
         for (IWord word : synset.getWords()) {
           String lemma = word.getLemma();
           int wordCount = 0;
@@ -155,13 +169,13 @@ public class WordSenseMapper {
    * @param senseIds
    * @return
    */
-  private List<SenseTableEntry> makeSenseTable(Map<String, Set<ISenseKey>> senseIds) {
+  private List<SenseTableEntry> makeSenseTable() {
     List<SenseTableEntry> senseTable = new ArrayList<SenseTableEntry>();
     for (String propBankSense : senseIds.keySet()) {
       for (ISenseKey senseKey : senseIds.get(propBankSense)) {
         ISenseEntry senseEntry = wordNet.getSenseEntry(senseKey);
-        ISynsetID id = new SynsetID(senseEntry.getOffset(), senseEntry.getPOS());
-        ISynset synset = wordNet.getSynset(id);
+        ISynsetID synsetId = new SynsetID(senseEntry.getOffset(), senseEntry.getPOS());
+        ISynset synset = wordNet.getSynset(synsetId);
         for (IWord word : synset.getWords()) {
           ISenseKey termSenseKey = new SenseKey(word.getLemma(), word.getLexicalID(), synset);
           ISenseEntry termSenseEntry = wordNet.getSenseEntry(termSenseKey);
@@ -227,8 +241,49 @@ public class WordSenseMapper {
   }
   
   /**
-   * Flatten the synonym/inverse map into a tab-separated file with columns: PropBank sense, string,
-   * count.
+   * Makes a table where the columns are: PropBank sense, WordNet sense key, WordNet sense
+   * frequency, troponym, troponym sense frequency.
+   * 
+   * The term frequency is, in fact, just the same as the frequency of the WordNet sense with the
+   * same offset, but different term. For example, "anticipate" and "expect" both have the same
+   * WordNet sense with offset 00721658, but there are two different sense entries for that offset:
+   * expect%2:31:00:: and anticipate%2:31:00::. Those sense entries have different frequencies - 204
+   * and 8, respectively. Technically this information is redundant, because it is elsewhere in the
+   * table, but it may prove convenient anyway. 
+   * 
+   * @param senseIds
+   * @return
+   */
+  private List<SenseTableEntry> makeTroponymTable() {
+    List<SenseTableEntry> troponymTable = new ArrayList<SenseTableEntry>();
+    for (String propBankSense : senseIds.keySet()) {
+      for (ISenseKey senseKey : senseIds.get(propBankSense)) {
+        ISenseEntry senseEntry = wordNet.getSenseEntry(senseKey);
+        ISynsetID synsetId = new SynsetID(senseEntry.getOffset(), senseEntry.getPOS());
+        ISynset synset = wordNet.getSynset(synsetId);
+        for (ISynsetID relatedSynsetId : synset.getRelatedSynsets(Pointer.HYPONYM)) {
+          ISynset relatedSynset = wordNet.getSynset(relatedSynsetId);
+          for (IWord word : relatedSynset.getWords()) {
+            ISenseKey termSenseKey = new SenseKey(word.getLemma(), word.getLexicalID(), relatedSynset);
+            ISenseEntry termSenseEntry = wordNet.getSenseEntry(termSenseKey);
+            int termFrequency = 0;
+            if (termSenseEntry != null) {
+              termFrequency = termSenseEntry.getTagCount();
+            }
+            troponymTable.add(new SenseTableEntry(
+              propBankSense, senseKey, senseEntry.getTagCount(), word.getLemma(), termFrequency,
+              termSenseKey
+            ));
+          }
+        }
+      }
+    }
+    return troponymTable;
+  }
+  
+  /**
+   * Flatten the PropBank-to-words / Words-to-PropBank map into a tab-separated file with columns:
+   * PropBank sense, string, count (or String, PropBank sense, count).
    */
   private void outputMap(Map<String, Map<String, Integer>> map, BufferedWriter writer) {
     for (String key : map.keySet()) {
@@ -260,7 +315,7 @@ public class WordSenseMapper {
   }
   
   /**
-   * Print out the sense table
+   * Print out the PropBank-to-sense table.
    */
   private void outputSenseTable(List<SenseTableEntry> senseTable, BufferedWriter writer) {
     for (SenseTableEntry entry : senseTable) {
@@ -280,26 +335,94 @@ public class WordSenseMapper {
   }
   
   /**
+   * Makes a table from PropBank senses to PropBank senses. For each PropBank sense, get the list of
+   * synsets associated with it. Then find the PropBank senses associated with those synsets.
+   */
+  private void outputPropBankTable(BufferedWriter writer) {
+    for (String propBankSense : senseIds.keySet()) {
+      for (ISenseKey senseKey : senseIds.get(propBankSense)) {
+        ISenseEntry senseEntry = wordNet.getSenseEntry(senseKey);
+        ISynsetID synsetId = new SynsetID(senseEntry.getOffset(), senseEntry.getPOS());
+        for (String synonymousPropBankSense : senseIdsInverse.get(synsetId)) {
+          String line = new StringBuilder(propBankSense).append("\t")
+            .append(senseEntry.getOffset()).append("\t")
+            .append(synonymousPropBankSense).append("\n")
+            .toString();
+          try {
+            writer.write(line);
+          } catch (IOException e) {
+            throw new RuntimeException("Error writing propbank to propbank map. ", e);
+          }
+        }
+      }
+    }
+  }
+  
+  /**
+   * Makes a table from PropBank senses to PropBank senses. For each PropBank sense, get the list of
+   * troponyms and their synsets. Then find the PropBank senses associated with those synsets.
+   */
+  private void outputPropBankTroponymTable(BufferedWriter writer) {
+    for (String propBankSense : senseIds.keySet()) {
+      for (ISenseKey senseKey : senseIds.get(propBankSense)) {
+        ISenseEntry senseEntry = wordNet.getSenseEntry(senseKey);
+        ISynsetID synsetId = new SynsetID(senseEntry.getOffset(), senseEntry.getPOS());
+        ISynset synset = wordNet.getSynset(synsetId);
+        
+        for (ISynsetID relatedSynsetId : synset.getRelatedSynsets(Pointer.HYPONYM)) {
+          if (!senseIdsInverse.containsKey(relatedSynsetId)) {
+            continue;
+          }
+          for (String troponymPropBankSense : senseIdsInverse.get(relatedSynsetId)) {
+            String line = new StringBuilder(propBankSense).append("\t")
+              .append(senseEntry.getOffset()).append("\t")
+              .append(troponymPropBankSense).append("\n")
+              .toString();
+            try {
+              writer.write(line);
+            } catch (IOException e) {
+              throw new RuntimeException("Error writing propbank to propbank map. ", e);
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  /**
    * Execute the program.
    */
   public void run() {
-    Map<String, Set<ISenseKey>> senseIds = readMapping(mapReader);
-    Map<String, Map<String, Integer>> synonymMap = makeSynonymMap(senseIds);
+    readMapping(mapReader);
+    Map<String, Map<String, Integer>> synonymMap = makeSynonymMap();
     Map<String, Map<String, Integer>> inverseMap = makeInverseMap(synonymMap);
-    List<SenseTableEntry> senseTable = makeSenseTable(senseIds);
-    String inversePath = outputPath + "-inverse";
-    String tablePath = outputPath + "-table";
-    BufferedWriter outputWriter;
+    List<SenseTableEntry> senseTable = makeSenseTable();
+    List<SenseTableEntry> troponymTable = makeTroponymTable();
+    String wordsPath = outputPath + "-words.tsv";
+    String inversePath = outputPath + "-words-inverse.tsv";
+    String tablePath = outputPath + "-synonyms.tsv";
+    String propBankSynonymPath = outputPath + "-propbank-synonyms.tsv";
+    String troponymPath = outputPath + "-troponyms.tsv";
+    String propBankTroponymPath = outputPath + "-propbank-troponyms.tsv";
     try {
-      outputWriter = new BufferedWriter(new FileWriter(outputPath));
+      BufferedWriter outputWriter = new BufferedWriter(new FileWriter(wordsPath));
       BufferedWriter inverseWriter = new BufferedWriter(new FileWriter(inversePath));
       BufferedWriter tableWriter = new BufferedWriter(new FileWriter(tablePath));
+      BufferedWriter propBankSynWriter = new BufferedWriter(new FileWriter(propBankSynonymPath));
+      BufferedWriter troponymWriter = new BufferedWriter(new FileWriter(troponymPath));
+      BufferedWriter propBankTropWriter = new BufferedWriter(new FileWriter(propBankTroponymPath));
       outputMap(synonymMap, outputWriter);
       outputMap(inverseMap, inverseWriter);
       outputSenseTable(senseTable, tableWriter);
+      outputPropBankTable(propBankSynWriter);
+      outputSenseTable(troponymTable, troponymWriter);
+      outputPropBankTroponymTable(propBankTropWriter);
       outputWriter.close();
       inverseWriter.close();
       tableWriter.close();
+      propBankSynWriter.close();
+      troponymWriter.close();
+      propBankTropWriter.close();
     } catch (IOException e) {
       throw new RuntimeException("Error writing output files.", e);
     }
