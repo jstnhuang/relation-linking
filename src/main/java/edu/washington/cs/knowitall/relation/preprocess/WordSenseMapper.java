@@ -16,7 +16,6 @@ import java.util.Set;
 import edu.mit.jwi.Dictionary;
 import edu.mit.jwi.IDictionary;
 import edu.mit.jwi.data.parse.SenseKeyParser;
-import edu.mit.jwi.item.IPointer;
 import edu.mit.jwi.item.ISenseEntry;
 import edu.mit.jwi.item.ISenseKey;
 import edu.mit.jwi.item.ISynset;
@@ -376,6 +375,7 @@ public class WordSenseMapper {
           for (String troponymPropBankSense : senseIdsInverse.get(relatedSynsetId)) {
             String line = new StringBuilder(propBankSense).append("\t")
               .append(senseEntry.getOffset()).append("\t")
+              .append(relatedSynsetId.getOffset()).append("\t")
               .append(troponymPropBankSense).append("\n")
               .toString();
             try {
