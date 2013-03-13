@@ -19,21 +19,84 @@
       <id>knowitall-snapshot</id>
       <url>http://knowitall.cs.washington.edu/maven2-snapshot</url>
     </repository>
+    <repository>
+      <id>sonatype-snapshot</id>
+      <name>Scoobi-SNAPSHOT-repo</name>
+      <url>https://oss.sonatype.org/content/repositories/snapshots/</url>
+    </repository>
+    <repository>
+      <id>Cloudera Maven Repository</id>
+      <url>https://repository.cloudera.com/content/repositories/releases/</url>
+    </repository>
+    <repository>
+      <id>Packaged Avro</id>
+      <url>http://nicta.github.com/scoobi/releases/</url>
+    </repository>
   </repositories>
   <dependencies>
-    <dependency>
-      <groupId>org.apache.derby</groupId>
-      <artifactId>derby</artifactId>
-      <version>10.9.1.0</version>
-    </dependency>
     <dependency>
       <groupId>edu.mit</groupId>
       <artifactId>jwi</artifactId>
       <version>2.2.3</version>
     </dependency>
+    <dependency>
+      <groupId>com.nicta</groupId>
+      <artifactId>scoobi_2.9.2</artifactId>
+      <version>0.5.0-cdh3</version>
+    </dependency>
+    <dependency>
+      <groupId>com.github.scopt</groupId>
+      <artifactId>scopt_2.9.2</artifactId>
+      <version>2.1.0</version>
+    </dependency>
+    <dependency>
+      <groupId>edu.washington.cs.knowitall</groupId>
+      <artifactId>openiedemo-backend</artifactId>
+      <version>1.0.5-SNAPSHOT</version>
+    </dependency>
+    <dependency>
+      <groupId>edu.washington.cs.knowitall.nlptools</groupId>
+      <artifactId>nlptools-srl-clear_2.9.2</artifactId>
+      <version>2.3.1-SNAPSHOT</version>
+    </dependency>
   </dependencies>
   <build>
+    <sourceDirectory>src/main/scala</sourceDirectory>
     <plugins>
+      <plugin>
+        <groupId>org.scala-tools</groupId>
+        <artifactId>maven-scala-plugin</artifactId>
+        <executions>
+          <execution>
+            <goals>
+              <goal>compile</goal>
+              <goal>testCompile</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <sourceDir>src/main/scala</sourceDir>
+          <jvmArgs>
+            <jvmArg>-Xms64m</jvmArg>
+            <jvmArg>-Xmx1024m</jvmArg>
+          </jvmArgs>
+          <!--args>
+            <arg>-deprecation</arg>
+          </args-->
+        </configuration>
+      </plugin>
+      <plugin>
+        <artifactId>maven-assembly-plugin</artifactId>
+        <configuration>
+          <archive>
+            <manifest>
+              <mainClass>
+                edu.washington.cs.knowitall.browser.hadoop.scoobi.ReverbSrlRunner
+              </mainClass>
+            </manifest>
+          </archive>
+        </configuration>
+      </plugin> 
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-jar-plugin</artifactId>
