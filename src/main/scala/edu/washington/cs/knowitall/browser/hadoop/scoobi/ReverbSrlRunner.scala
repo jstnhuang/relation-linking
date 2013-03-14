@@ -1,15 +1,21 @@
 package edu.washington.cs.knowitall.browser.hadoop.scoobi
 
-import com.nicta.scoobi.Scoobi._
-import edu.washington.cs.knowitall.browser.extraction.ReVerbExtractionGroup
-import scopt.OptionParser
-import edu.washington.cs.knowitall.tool.srl.ClearSrl
-import edu.washington.cs.knowitall.tool.parse.ClearParser
+import scala.Option.option2Iterable
+
+import com.nicta.scoobi.Scoobi.ComparableGrouping
+import com.nicta.scoobi.Scoobi.DList
+import com.nicta.scoobi.Scoobi.ScoobiApp
+import com.nicta.scoobi.Scoobi.StringFmt
+import com.nicta.scoobi.Scoobi.TextInput
+import com.nicta.scoobi.Scoobi.TextOutput
+import com.nicta.scoobi.Scoobi.Tuple2Fmt
+import com.nicta.scoobi.Scoobi.persist
+
+import edu.knowitall.tool.parse.ClearParser
+import edu.knowitall.tool.srl.ClearSrl
 import edu.washington.cs.knowitall.browser.extraction.ExtractionGroup
 import edu.washington.cs.knowitall.browser.extraction.ReVerbExtractionGroup
-import edu.washington.cs.knowitall.browser.extraction.Instance
-import edu.washington.cs.knowitall.browser.extraction.ReVerbExtraction
-import edu.washington.cs.knowitall.browser.extraction.ReVerbExtractionGroup
+import scopt.OptionParser
 
 /**
  * Executes SRL over ReVerb extraction groups.
