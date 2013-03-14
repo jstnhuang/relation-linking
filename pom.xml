@@ -57,7 +57,7 @@
     <dependency>
       <groupId>edu.washington.cs.knowitall.nlptools</groupId>
       <artifactId>nlptools-srl-clear_2.9.2</artifactId>
-      <version>2.3.1-SNAPSHOT</version>
+      <version>2.4.0</version>
     </dependency>
   </dependencies>
   <build>
