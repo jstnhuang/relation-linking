@@ -9,18 +9,23 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 
 import edu.mit.jwi.Dictionary;
 import edu.mit.jwi.IDictionary;
 import edu.mit.jwi.data.parse.SenseKeyParser;
+import edu.mit.jwi.item.IIndexWord;
 import edu.mit.jwi.item.ISenseEntry;
 import edu.mit.jwi.item.ISenseKey;
 import edu.mit.jwi.item.ISynset;
 import edu.mit.jwi.item.ISynsetID;
 import edu.mit.jwi.item.IWord;
+import edu.mit.jwi.item.IWordID;
+import edu.mit.jwi.item.POS;
 import edu.mit.jwi.item.Pointer;
 import edu.mit.jwi.item.SenseKey;
 import edu.mit.jwi.item.SynsetID;
@@ -280,6 +285,60 @@ public class WordSenseMapper {
     return troponymTable;
   }
   
+  private void makeWordToSenseMap() {
+    Map<String, Map<ISenseKey, Integer>> wordSenseMap = new HashMap<>();
+    
+    Iterator<IIndexWord> indexWordIterator = wordNet.getIndexWordIterator(POS.VERB);
+    while (indexWordIterator.hasNext()) {
+      IIndexWord indexWord = indexWordIterator.next();
+      for (IWordID wordId : indexWord.getWordIDs()) {
+        IWord word = wordNet.getWord(wordId);
+        ISenseKey senseKey = word.getSenseKey();
+        ISenseEntry senseEntry = wordNet.getSenseEntry(senseKey);
+        int count = senseEntry.getTagCount();
+        
+        ISynsetID synsetId = new SynsetID(senseEntry.getOffset(), POS.VERB);
+        ISynset synset = wordNet.getSynset(synsetId);
+        
+        List<IWord> allWords = new ArrayList<IWord>(synset.getWords());
+        allWords.add(word);
+        for (IWord synWord : synset.getWords()) {
+          if (wordSenseMap.containsKey(synWord.getLemma())) {
+            Map<ISenseKey, Integer> senseCounts = wordSenseMap.get(synWord.getLemma());
+            if (senseCounts.containsKey(senseKey)) {
+              senseCounts.put(senseKey, senseCounts.get(senseKey) + count);
+            } else {
+              senseCounts.put(senseKey, count);
+            }
+            wordSenseMap.put(synWord.getLemma(), senseCounts);
+          } else {
+            Map<ISenseKey, Integer> senseCounts = new HashMap<>();
+            senseCounts.put(senseKey, count);
+            wordSenseMap.put(synWord.getLemma(), senseCounts);
+          }
+        }
+      }
+    }
+    
+    // Output
+    try {
+      BufferedWriter writer = new BufferedWriter(new FileWriter(
+        outputPath + "words-to-senses.tsv"
+      ));
+      
+      for (String word : wordSenseMap.keySet()) {
+        Map<ISenseKey, Integer> senseCounts = wordSenseMap.get(word);
+        for (ISenseKey senseKey : senseCounts.keySet()) {
+          int count = senseCounts.get(senseKey);
+          writer.write(word + "\t" + senseKey + "\t" + count + "\n");
+        }
+      }
+      writer.close();
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
+  
   /**
    * Flatten the PropBank-to-words / Words-to-PropBank map into a tab-separated file with columns:
    * PropBank sense, string, count (or String, PropBank sense, count).
@@ -393,39 +452,40 @@ public class WordSenseMapper {
    * Execute the program.
    */
   public void run() {
-    readMapping(mapReader);
-    Map<String, Map<String, Integer>> synonymMap = makeSynonymMap();
-    Map<String, Map<String, Integer>> inverseMap = makeInverseMap(synonymMap);
-    List<SenseTableEntry> senseTable = makeSenseTable();
-    List<SenseTableEntry> troponymTable = makeTroponymTable();
-    String wordsPath = outputPath + "-words.tsv";
-    String inversePath = outputPath + "-words-inverse.tsv";
-    String tablePath = outputPath + "-synonyms.tsv";
-    String propBankSynonymPath = outputPath + "-propbank-synonyms.tsv";
-    String troponymPath = outputPath + "-troponyms.tsv";
-    String propBankTroponymPath = outputPath + "-propbank-troponyms.tsv";
-    try {
-      BufferedWriter outputWriter = new BufferedWriter(new FileWriter(wordsPath));
-      BufferedWriter inverseWriter = new BufferedWriter(new FileWriter(inversePath));
-      BufferedWriter tableWriter = new BufferedWriter(new FileWriter(tablePath));
-      BufferedWriter propBankSynWriter = new BufferedWriter(new FileWriter(propBankSynonymPath));
-      BufferedWriter troponymWriter = new BufferedWriter(new FileWriter(troponymPath));
-      BufferedWriter propBankTropWriter = new BufferedWriter(new FileWriter(propBankTroponymPath));
-      outputMap(synonymMap, outputWriter);
-      outputMap(inverseMap, inverseWriter);
-      outputSenseTable(senseTable, tableWriter);
-      outputPropBankTable(propBankSynWriter);
-      outputSenseTable(troponymTable, troponymWriter);
-      outputPropBankTroponymTable(propBankTropWriter);
-      outputWriter.close();
-      inverseWriter.close();
-      tableWriter.close();
-      propBankSynWriter.close();
-      troponymWriter.close();
-      propBankTropWriter.close();
-    } catch (IOException e) {
-      throw new RuntimeException("Error writing output files.", e);
-    }
+//    readMapping(mapReader);
+//    Map<String, Map<String, Integer>> synonymMap = makeSynonymMap();
+//    Map<String, Map<String, Integer>> inverseMap = makeInverseMap(synonymMap);
+//    List<SenseTableEntry> senseTable = makeSenseTable();
+//    List<SenseTableEntry> troponymTable = makeTroponymTable();
+    makeWordToSenseMap();
+//    String wordsPath = outputPath + "propbank-to-words.tsv";
+//    String inversePath = outputPath + "propbank-to-words-inverse.tsv";
+//    String tablePath = outputPath + "propbank-to-synonyms.tsv";
+//    String propBankSynonymPath = outputPath + "propbank-to-propbank-synonyms.tsv";
+//    String troponymPath = outputPath + "propbank-to-troponyms.tsv";
+//    String propBankTroponymPath = outputPath + "propbank-to-propbank-troponyms.tsv";
+//    try {
+//      BufferedWriter outputWriter = new BufferedWriter(new FileWriter(wordsPath));
+//      BufferedWriter inverseWriter = new BufferedWriter(new FileWriter(inversePath));
+//      BufferedWriter tableWriter = new BufferedWriter(new FileWriter(tablePath));
+//      BufferedWriter propBankSynWriter = new BufferedWriter(new FileWriter(propBankSynonymPath));
+//      BufferedWriter troponymWriter = new BufferedWriter(new FileWriter(troponymPath));
+//      BufferedWriter propBankTropWriter = new BufferedWriter(new FileWriter(propBankTroponymPath));
+//      outputMap(synonymMap, outputWriter);
+//      outputMap(inverseMap, inverseWriter);
+//      outputSenseTable(senseTable, tableWriter);
+//      outputPropBankTable(propBankSynWriter);
+//      outputSenseTable(troponymTable, troponymWriter);
+//      outputPropBankTroponymTable(propBankTropWriter);
+//      outputWriter.close();
+//      inverseWriter.close();
+//      tableWriter.close();
+//      propBankSynWriter.close();
+//      troponymWriter.close();
+//      propBankTropWriter.close();
+//    } catch (IOException e) {
+//      throw new RuntimeException("Error writing output files.", e);
+//    }
   }
   
   /**
@@ -437,21 +497,24 @@ public class WordSenseMapper {
    *        -inverse added to it.
    */
   public static void main(String[] args) {
-    if (args.length != 3) {
+    if (args.length != 2) {
       System.out.println(
-        "Usage: java edu.washington.cs.knowitall.relation.preprocess.WordSenseMapper pbToWnFile"
-        + " wordNetPath outputFile"
+        "Usage: java edu.washington.cs.knowitall.relation.preprocess.WordSenseMapper inputDir"
+        + " outputDir"
       );
+      return;
     }
-    String pbToWnPath = args[0];
-    String wordNetPath = args[1];
-    String outputFilePath = args[2];
+    String inputDir = args[0];
+    String outputDir = args[1];
 
+    String pbToWnPath = inputDir + "VN-WN.txt";
+    String wordNetPath = inputDir + "WordNet-3.0/dict/";
+    
     try {
       BufferedReader mapReader = new BufferedReader(new FileReader(pbToWnPath));
       IDictionary wordNet = new Dictionary(new File(wordNetPath));
       wordNet.open();
-      WordSenseMapper mapper = new WordSenseMapper(mapReader, wordNet, outputFilePath);
+      WordSenseMapper mapper = new WordSenseMapper(mapReader, wordNet, outputDir);
       mapper.run();
       mapReader.close();
     } catch (Exception e) {
