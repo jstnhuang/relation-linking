@@ -7,13 +7,15 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.TreeMap;
+import java.util.TreeSet;
 
 import edu.mit.jwi.Dictionary;
 import edu.mit.jwi.IDictionary;
@@ -40,18 +42,25 @@ import edu.mit.jwi.item.SynsetID;
  * Outputs a flat, tab-separated file suitable for human examination or database import.
  */
 public class WordSenseMapper {
-  BufferedReader mapReader;
   IDictionary wordNet;
+  String inputPath;
   String outputPath;
   /** Maps PropBank senses to sets of WordNet sense keys. */
   Map<String, Set<ISenseKey>> senseIds;
   /** Maps WordNet synset IDs (from the sense keys of senseIds) to PropBank senses. */
   Map<ISynsetID, Set<String>> senseIdsInverse;
   
-  public WordSenseMapper(BufferedReader mapReader, IDictionary wordNet, String outputPath) {
-    this.mapReader = mapReader;
-    this.wordNet = wordNet;
+  public WordSenseMapper(String inputPath, String outputPath) {
+    this.inputPath = inputPath;
     this.outputPath = outputPath;
+    
+    String wordNetPath = inputPath + "WordNet-3.0/dict/";
+    try {
+      wordNet = new Dictionary(new File(wordNetPath));
+      wordNet.open();
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
   }
   
   /**
@@ -62,10 +71,13 @@ public class WordSenseMapper {
    * the WordNet senses are missing the last two colon-separated fields regarding the head word, so
    * we just add "::" to the end of each.
    */
-  private void readMapping(BufferedReader mapReader) {
+  private void readPropBankToWordNetMapping() {
+    String pbToWnPath = inputPath + "VN-WN.txt";
+    
     senseIds = new HashMap<String, Set<ISenseKey>>();
     senseIdsInverse = new HashMap<ISynsetID, Set<String>>();
     try {
+      BufferedReader mapReader = new BufferedReader(new FileReader(pbToWnPath));
       mapReader.readLine();
       while(mapReader.ready()) {
         String line = mapReader.readLine();
@@ -99,6 +111,7 @@ public class WordSenseMapper {
           }
         }
       }
+      mapReader.close();
     } catch (IOException e) {
       throw new RuntimeException("Error reading mapping file.", e);
     }
@@ -448,44 +461,306 @@ public class WordSenseMapper {
     }
   }
   
+  private Map<String, Set<String>> getPropbankToPropbankSynonyms() {
+    Map<String, Set<String>> propbankTroponymsToSenses = new HashMap<>();
+    String propbankSynonymPath = outputPath + "propbank-to-propbank-synonyms.tsv";
+    try {
+      BufferedReader reader = new BufferedReader(new FileReader(propbankSynonymPath));
+      while(reader.ready()) {
+        String line = reader.readLine();
+        String[] columns = line.split("\t");
+        String propbankSense = columns[0].trim();
+        String propbankSynonym = columns[2].trim();
+        if (propbankTroponymsToSenses.containsKey(propbankSynonym)) {
+          propbankTroponymsToSenses.get(propbankSynonym).add(propbankSense);
+        } else {
+          Set<String> propbankSenses = new HashSet<String>();
+          propbankSenses.add(propbankSense);
+          propbankTroponymsToSenses.put(propbankSynonym, propbankSenses);
+        }
+      }
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+    return propbankTroponymsToSenses;
+  }
+  
+  private Map<String, Set<String>> getStringToPropbankSynonyms() {
+    Map<String, Set<String>> stringToPropbankSenses = new HashMap<>();
+    String propbankTroponymPath = outputPath + "propbank-to-synonyms.tsv";
+    try {
+      BufferedReader reader = new BufferedReader(new FileReader(propbankTroponymPath));
+      while(reader.ready()) {
+        String line = reader.readLine();
+        String[] columns = line.split("\t");
+        String string = columns[3].trim();
+        String propbankSense = columns[0].trim();
+        if (stringToPropbankSenses.containsKey(string)) {
+          stringToPropbankSenses.get(string).add(propbankSense);
+        } else {
+          Set<String> propbankSenses = new HashSet<String>();
+          propbankSenses.add(propbankSense);
+          stringToPropbankSenses.put(string, propbankSenses);
+        }
+      }
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+    return stringToPropbankSenses;
+  }
+  
+  private Map<String, Set<String>> getPropbankToPropbankEntailments() {
+    Map<String, Set<String>> propbankTroponymsToSenses = new HashMap<>();
+    String propbankTroponymPath = outputPath + "propbank-to-propbank-troponyms.tsv";
+    try {
+      BufferedReader reader = new BufferedReader(new FileReader(propbankTroponymPath));
+      while(reader.ready()) {
+        String line = reader.readLine();
+        String[] columns = line.split("\t");
+        String propbankSense = columns[0].trim();
+        String propbankTroponym = columns[3].trim();
+        if (propbankTroponymsToSenses.containsKey(propbankTroponym)) {
+          propbankTroponymsToSenses.get(propbankTroponym).add(propbankSense);
+        } else {
+          Set<String> propbankSenses = new HashSet<String>();
+          propbankSenses.add(propbankSense);
+          propbankTroponymsToSenses.put(propbankTroponym, propbankSenses);
+        }
+      }
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+    return propbankTroponymsToSenses;
+  }
+  
+  private Map<String, Set<String>> getStringToPropbankEntailments() {
+    Map<String, Set<String>> stringToPropbankSenses = new HashMap<>();
+    String propbankTroponymPath = outputPath + "propbank-to-troponyms.tsv";
+    try {
+      BufferedReader reader = new BufferedReader(new FileReader(propbankTroponymPath));
+      while(reader.ready()) {
+        String line = reader.readLine();
+        String[] columns = line.split("\t");
+        String string = columns[3].trim();
+        String propbankSense = columns[0].trim();
+        if (stringToPropbankSenses.containsKey(string)) {
+          stringToPropbankSenses.get(string).add(propbankSense);
+        } else {
+          Set<String> propbankSenses = new HashSet<String>();
+          propbankSenses.add(propbankSense);
+          stringToPropbankSenses.put(string, propbankSenses);
+        }
+      }
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+    return stringToPropbankSenses;
+  }
+  
   /**
-   * Execute the program.
+   * Represents a path in the Propbank transitive closure.
    */
-  public void run() {
-//    readMapping(mapReader);
-//    Map<String, Map<String, Integer>> synonymMap = makeSynonymMap();
-//    Map<String, Map<String, Integer>> inverseMap = makeInverseMap(synonymMap);
-//    List<SenseTableEntry> senseTable = makeSenseTable();
-//    List<SenseTableEntry> troponymTable = makeTroponymTable();
-    makeWordToSenseMap();
-//    String wordsPath = outputPath + "propbank-to-words.tsv";
-//    String inversePath = outputPath + "propbank-to-words-inverse.tsv";
-//    String tablePath = outputPath + "propbank-to-synonyms.tsv";
-//    String propBankSynonymPath = outputPath + "propbank-to-propbank-synonyms.tsv";
-//    String troponymPath = outputPath + "propbank-to-troponyms.tsv";
-//    String propBankTroponymPath = outputPath + "propbank-to-propbank-troponyms.tsv";
-//    try {
-//      BufferedWriter outputWriter = new BufferedWriter(new FileWriter(wordsPath));
-//      BufferedWriter inverseWriter = new BufferedWriter(new FileWriter(inversePath));
-//      BufferedWriter tableWriter = new BufferedWriter(new FileWriter(tablePath));
-//      BufferedWriter propBankSynWriter = new BufferedWriter(new FileWriter(propBankSynonymPath));
-//      BufferedWriter troponymWriter = new BufferedWriter(new FileWriter(troponymPath));
-//      BufferedWriter propBankTropWriter = new BufferedWriter(new FileWriter(propBankTroponymPath));
-//      outputMap(synonymMap, outputWriter);
-//      outputMap(inverseMap, inverseWriter);
-//      outputSenseTable(senseTable, tableWriter);
-//      outputPropBankTable(propBankSynWriter);
-//      outputSenseTable(troponymTable, troponymWriter);
-//      outputPropBankTroponymTable(propBankTropWriter);
-//      outputWriter.close();
-//      inverseWriter.close();
-//      tableWriter.close();
-//      propBankSynWriter.close();
-//      troponymWriter.close();
-//      propBankTropWriter.close();
-//    } catch (IOException e) {
-//      throw new RuntimeException("Error writing output files.", e);
-//    }
+  class TransitiveClosurePath {
+    LinkedList<String> path;
+    Set<String> elements;
+    
+    public TransitiveClosurePath() {
+      path = new LinkedList<String>();
+      elements = new HashSet<String>();
+    }
+    
+    public TransitiveClosurePath(TransitiveClosurePath other) {
+      path = new LinkedList<String>(other.path);
+      elements = new HashSet<String>(other.elements);
+    }
+    
+    public void add(String element) {
+      path.add(element);
+      elements.add(element);
+    }
+    
+    public String getLast() {
+      return path.getLast();
+    }
+    
+    public int getLength() {
+      return path.size();
+    }
+    
+    public boolean containsElement(String element) {
+      return elements.contains(element);
+    }
+    
+    public LinkedList<String> getPath() {
+      return path;
+    }
+
+    @Override
+    public int hashCode() {
+      final int prime = 31;
+      int result = 1;
+      result = prime * result + getOuterType().hashCode();
+      result = prime * result + ((elements == null) ? 0 : elements.hashCode());
+      result = prime * result + ((path == null) ? 0 : path.hashCode());
+      return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+      if (this == obj) return true;
+      if (obj == null) return false;
+      if (getClass() != obj.getClass()) return false;
+      TransitiveClosurePath other = (TransitiveClosurePath) obj;
+      if (!getOuterType().equals(other.getOuterType())) return false;
+      if (elements == null) {
+        if (other.elements != null) return false;
+      } else if (!elements.equals(other.elements)) return false;
+      if (path == null) {
+        if (other.path != null) return false;
+      } else if (!path.equals(other.path)) return false;
+      return true;
+    }
+
+    private WordSenseMapper getOuterType() {
+      return WordSenseMapper.this;
+    }
+  }
+  
+  private void findPropBankTransitiveClosure() {
+    boolean useEntailments = true;
+    boolean useSynonyms = true;
+    int maxPathLength = 3;
+    Map<String, Set<String>> stringToPropbankEntailments = getStringToPropbankEntailments();
+    Map<String, Set<String>> propbankToPropbankEntailments = getPropbankToPropbankEntailments();
+    Map<String, Set<String>> stringToPropbankSynonyms = getStringToPropbankSynonyms();
+    Map<String, Set<String>> propbankToPropbankSynonyms = getPropbankToPropbankSynonyms();
+    
+    Set<String> testStrings = new HashSet<String>();
+    testStrings.addAll(stringToPropbankEntailments.keySet());
+    testStrings.addAll(stringToPropbankSynonyms.keySet());
+    
+    for (String testString : testStrings) {
+      LinkedList<TransitiveClosurePath> queue = new LinkedList<>();
+      if (useEntailments && stringToPropbankEntailments.containsKey(testString)) {
+        for (String propbankSense : stringToPropbankEntailments.get(testString)) {
+          TransitiveClosurePath path = new TransitiveClosurePath();
+          path.add(propbankSense);
+          queue.add(path);
+        }
+      }
+      if (useSynonyms && stringToPropbankSynonyms.containsKey(testString)) {
+       for (String propbankSense : stringToPropbankSynonyms.get(testString)) {
+          TransitiveClosurePath path = new TransitiveClosurePath();
+          path.add(propbankSense);
+          queue.add(path);
+        }
+      }
+      
+      Set<TransitiveClosurePath> transitiveClosure = new HashSet<>();
+      Set<String> lastPbSenses = new TreeSet<String>();
+      while (!queue.isEmpty()) {
+        TransitiveClosurePath path = queue.removeFirst();
+        transitiveClosure.add(path);
+        lastPbSenses.add(path.getLast());
+        
+        if (path.getLength() >= maxPathLength) {
+          continue;
+        }
+        
+        String lastPbSense = path.getLast();
+        Set<String> nextPbSenses = new HashSet<String>();
+        if (useEntailments && propbankToPropbankEntailments.containsKey(lastPbSense)) {
+          nextPbSenses.addAll(propbankToPropbankEntailments.get(lastPbSense));
+        }
+        if (useSynonyms && propbankToPropbankSynonyms.containsKey(lastPbSense)) {
+          nextPbSenses.addAll(propbankToPropbankSynonyms.get(lastPbSense));
+        }
+        for (String nextPbSense : nextPbSenses) {
+          if (!path.containsElement(nextPbSense)) {
+            TransitiveClosurePath newPath = new TransitiveClosurePath(path);
+            newPath.add(nextPbSense);
+            queue.add(newPath);
+          }
+        }
+      }
+      
+      try {
+        File outputFile = new File(outputPath + "tc/" + testString + ".tsv");
+        outputFile.createNewFile();
+        BufferedWriter writer = new BufferedWriter(new FileWriter(outputFile));
+        writer.write("Final senses:\n");
+        for (String lastPbSense : lastPbSenses) {
+          writer.write(lastPbSense + "\n");
+        }
+        writer.write("\n");
+        writer.write("All paths:\n");
+        String[] tcArray = new String[transitiveClosure.size()];
+        int index = 0;
+        for (TransitiveClosurePath path : transitiveClosure) {
+          tcArray[index++] = path.getPath().toString();
+        }
+        Arrays.sort(tcArray);
+        for(String path : tcArray) {
+          writer.write(path + "\n");
+        }
+        writer.close();
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+    }
+  }
+  
+  /**
+   * Executes the given experiments.
+   */
+  public void run(Experiment[] experiments) {
+    readPropBankToWordNetMapping();
+    
+    String wordsPath = outputPath + "propbank-to-words.tsv";
+    String inversePath = outputPath + "propbank-to-words-inverse.tsv";
+    String tablePath = outputPath + "propbank-to-synonyms.tsv";
+    String propBankSynonymPath = outputPath + "propbank-to-propbank-synonyms.tsv";
+    String troponymPath = outputPath + "propbank-to-troponyms.tsv";
+    String propBankTroponymPath = outputPath + "propbank-to-propbank-troponyms.tsv";
+    
+    for (Experiment experiment : experiments) {
+      if (Experiment.MAKE_TABLES.equals(experiment)) {
+        Map<String, Map<String, Integer>> synonymMap = makeSynonymMap();
+        Map<String, Map<String, Integer>> inverseMap = makeInverseMap(synonymMap);
+        List<SenseTableEntry> senseTable = makeSenseTable();
+        List<SenseTableEntry> troponymTable = makeTroponymTable();
+        makeWordToSenseMap();
+        try {
+          BufferedWriter outputWriter = new BufferedWriter(new FileWriter(wordsPath));
+          BufferedWriter inverseWriter = new BufferedWriter(new FileWriter(inversePath));
+          BufferedWriter tableWriter = new BufferedWriter(new FileWriter(tablePath));
+          BufferedWriter propBankSynWriter = new BufferedWriter(new FileWriter(propBankSynonymPath));
+          BufferedWriter troponymWriter = new BufferedWriter(new FileWriter(troponymPath));
+          BufferedWriter propBankTropWriter = new BufferedWriter(new FileWriter(propBankTroponymPath));
+          outputMap(synonymMap, outputWriter);
+          outputMap(inverseMap, inverseWriter);
+          outputSenseTable(senseTable, tableWriter);
+          outputPropBankTable(propBankSynWriter);
+          outputSenseTable(troponymTable, troponymWriter);
+          outputPropBankTroponymTable(propBankTropWriter);
+          outputWriter.close();
+          inverseWriter.close();
+          tableWriter.close();
+          propBankSynWriter.close();
+          troponymWriter.close();
+          propBankTropWriter.close();
+        } catch (IOException e) {
+          throw new RuntimeException("Error writing output files.", e);
+        }
+      } else if (Experiment.COMPUTE_TRANSITIVE_CLOSURE.equals(experiment)){
+        findPropBankTransitiveClosure();
+      } else {
+      }
+    }
+  }
+  
+  enum Experiment {
+    MAKE_TABLES, COMPUTE_TRANSITIVE_CLOSURE;
   }
   
   /**
@@ -507,18 +782,8 @@ public class WordSenseMapper {
     String inputDir = args[0];
     String outputDir = args[1];
 
-    String pbToWnPath = inputDir + "VN-WN.txt";
-    String wordNetPath = inputDir + "WordNet-3.0/dict/";
-    
-    try {
-      BufferedReader mapReader = new BufferedReader(new FileReader(pbToWnPath));
-      IDictionary wordNet = new Dictionary(new File(wordNetPath));
-      wordNet.open();
-      WordSenseMapper mapper = new WordSenseMapper(mapReader, wordNet, outputDir);
-      mapper.run();
-      mapReader.close();
-    } catch (Exception e) {
-      throw new RuntimeException(e);
-    }
+    WordSenseMapper mapper = new WordSenseMapper(inputDir, outputDir);
+    Experiment[] experiments = {Experiment.COMPUTE_TRANSITIVE_CLOSURE};
+    mapper.run(experiments);
   }
 }
