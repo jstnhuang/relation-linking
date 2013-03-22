@@ -41,12 +41,11 @@ object ReverbSrlRunner extends ScoobiApp {
       ReVerbExtractionGroup.deserializeFromString(line) match {
         case Some(group) => {
           group.instances.flatMap { instance =>
+            val arg1Text = instance.extraction.arg1Text
+            val relText = instance.extraction.relText
+            val arg2Text = instance.extraction.arg2Text
+            val sentence = List(arg1Text, relText, arg2Text).mkString(" ")
             try {
-              val arg1Text = instance.extraction.arg1Text
-              val relText = instance.extraction.relText
-              val arg2Text = instance.extraction.arg2Text
-              val sentence = List(arg1Text, relText, arg2Text).mkString(" ")
-              
               val graph = clearParser.dependencyGraph(sentence)
               val frames = clearSrl(graph);
               val relLink = if (frames.isEmpty) {
@@ -68,8 +67,13 @@ object ReverbSrlRunner extends ScoobiApp {
               
               Some(key, value)
             } catch {
+              case e: Error => {
+                System.err.println("ReverbSrlRunner: error processing " + sentence + ": " + e);
+                e.printStackTrace();
+                None
+              }
               case e: Exception => {
-                System.err.println("Error processing " + instance + ": " + e);
+                System.err.println("ReverbSrlRunner: exception processing " + sentence + ": " + e);
                 e.printStackTrace();
                 None
               }
