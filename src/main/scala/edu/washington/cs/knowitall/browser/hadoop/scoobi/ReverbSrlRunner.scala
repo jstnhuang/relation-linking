@@ -69,12 +69,10 @@ object ReverbSrlRunner extends ScoobiApp {
             } catch {
               case e: Error => {
                 System.err.println("ReverbSrlRunner: error processing " + sentence + ": " + e);
-                e.printStackTrace();
                 None
               }
               case e: Exception => {
                 System.err.println("ReverbSrlRunner: exception processing " + sentence + ": " + e);
-                e.printStackTrace();
                 None
               }
             }
