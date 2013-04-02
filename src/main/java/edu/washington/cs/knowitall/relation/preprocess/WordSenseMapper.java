@@ -33,6 +33,8 @@ import edu.mit.jwi.item.SenseKey;
 import edu.mit.jwi.item.SynsetID;
 
 /**
+ * Very quick and dirty code!
+ * 
  * Builds a mapping from PropBank rolesets (which we refer to sometimes as PropBank senses) to
  * WordNet synonym sets and vice versa. To do this, we need two data sources:
  * <ul>
@@ -461,6 +463,9 @@ public class WordSenseMapper {
     }
   }
   
+  /**
+   * Makes table from PropBank senses to synonymous PropBank senses.
+   */
   private Map<String, Set<String>> getPropbankToPropbankSynonyms() {
     Map<String, Set<String>> propbankTroponymsToSenses = new HashMap<>();
     String propbankSynonymPath = outputPath + "propbank-to-propbank-synonyms.tsv";
@@ -479,12 +484,16 @@ public class WordSenseMapper {
           propbankTroponymsToSenses.put(propbankSynonym, propbankSenses);
         }
       }
+      reader.close();
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
     return propbankTroponymsToSenses;
   }
   
+  /**
+   * Makes table from PropBank senses to synonymous verb phrases.
+   */
   private Map<String, Set<String>> getStringToPropbankSynonyms() {
     Map<String, Set<String>> stringToPropbankSenses = new HashMap<>();
     String propbankTroponymPath = outputPath + "propbank-to-synonyms.tsv";
@@ -503,6 +512,7 @@ public class WordSenseMapper {
           stringToPropbankSenses.put(string, propbankSenses);
         }
       }
+      reader.close();
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
@@ -527,12 +537,16 @@ public class WordSenseMapper {
           propbankTroponymsToSenses.put(propbankTroponym, propbankSenses);
         }
       }
+      reader.close();
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
     return propbankTroponymsToSenses;
   }
   
+  /**
+   * Makes table from PropBank senses to PropBank troponyms.
+   */
   private Map<String, Set<String>> getStringToPropbankEntailments() {
     Map<String, Set<String>> stringToPropbankSenses = new HashMap<>();
     String propbankTroponymPath = outputPath + "propbank-to-troponyms.tsv";
@@ -551,6 +565,7 @@ public class WordSenseMapper {
           stringToPropbankSenses.put(string, propbankSenses);
         }
       }
+      reader.close();
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
@@ -711,6 +726,131 @@ public class WordSenseMapper {
   }
   
   /**
+   * Quick and dirty method that creates a benchmark set of Open IE tuples.
+   */
+  private void createBenchmark() {
+    String openiePath = inputPath + "openie_100.txt";
+    Map<String, Set<String>> stringToPropbankEntailments = getStringToPropbankEntailments();
+    Map<String, Set<String>> stringToPropbankSynonyms = getStringToPropbankSynonyms();
+    
+    try {
+      BufferedReader reader = new BufferedReader(new FileReader(openiePath));
+      while(reader.ready()) {
+        String line = reader.readLine();
+        String[] columns = line.split("\t");
+        
+        String arg1 = columns[0];
+        String relPhrase = columns[1];
+        String arg2 = columns[2];
+        String srl = columns[7];
+        String sentence = columns[11];
+
+        String[] relWords = relPhrase.split(" ");
+        int numWordsInRel = relWords.length;
+        int relStart = Integer.parseInt(columns[9].substring(1, columns[9].length()-1).split(",")[0]);
+        int relEnd = relStart + numWordsInRel; // exclusive
+        String[] posTags = columns[12].split(" ");
+        List<String> verbs = new ArrayList<String>();
+        for (int i=relStart, count=0; i<relEnd; i++) {
+          String posTag = posTags[i];
+          if (posTag.startsWith("V")) {
+            verbs.add(relWords[count]);
+            count++;
+          } else {
+            if (verbs.size() == 0) {
+              count++;
+              continue;
+            } else {
+              break;
+            }
+          }
+        }
+        String verb = join(verbs, " ");
+        if (verb == null) {
+          continue;
+        }
+        
+        Set<String> propbankSyns = stringToPropbankSynonyms.get(verb);
+        Set<String> propbankTrops = stringToPropbankEntailments.get(verb);
+        Set<String> ontoSyns = new HashSet<String>();
+        Set<String> ontoTrops = new HashSet<String>();
+        String directSynonyms = null;
+        String directTrops = null;
+        if (propbankSyns != null) {
+          directSynonyms = join(propbankSyns, ", ");
+          ontoSyns = ontologyLookup(propbankSyns);
+          ontoSyns.removeAll(propbankSyns);
+        }
+        if (propbankTrops != null) {
+          directTrops = join(propbankTrops, ", ");
+          ontoTrops = ontologyLookup(propbankTrops);
+          ontoTrops.removeAll(propbankTrops);
+        }
+        Set<String> ontoSenses = new TreeSet<String>();
+        ontoSenses.addAll(ontoSyns);
+        ontoSenses.addAll(ontoTrops);
+        String ontoSensesStr = join(ontoSenses, ", ");
+        
+        String directSenses = join(Arrays.asList(directSynonyms, directTrops), "; ");
+        System.out.println(join(Arrays.asList(
+          "Arg 1: " + arg1,
+          "Relation: " + relPhrase,
+          "Arg 2: " + arg2,
+          "Verb: " + verb,
+          "SRL link: " + srl,
+          "Sentence: " + sentence,
+          "Gold senses: ",
+          "Direct senses: " + directSenses,
+          "Ontology senses: " + ontoSensesStr), "\n"));
+        System.out.println();
+      }
+      reader.close();
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
+  
+  /**
+   * Gets the set of entailed and synonymous PropBank senses for each PropBank sense in the given
+   * set.
+   */
+  private Set<String> ontologyLookup(Set<String> pbSenses) {
+    Set<String> set = new HashSet<String>();
+    Map<String, Set<String>> propbankToPropbankEntailments = getPropbankToPropbankEntailments();
+    Map<String, Set<String>> propbankToPropbankSynonyms = getPropbankToPropbankSynonyms();
+    for (String pbSense : pbSenses) {
+      Set<String> entailments = propbankToPropbankEntailments.get(pbSense);
+      Set<String> synonyms = propbankToPropbankSynonyms.get(pbSense);
+      if (entailments != null) {
+        set.addAll(entailments);
+      }
+      if (synonyms != null) {
+        set.addAll(synonyms);
+      }
+    }
+    return set;
+  }
+  
+  /**
+   * Generic string join function.
+   */
+  public String join(Iterable<String> list, String str) {
+    StringBuilder builder = new StringBuilder();
+    boolean first = true;
+    for (String item : list) {
+      if (item == null) {
+        continue;
+      }
+      if (!first) {
+        builder.append(str);
+      }
+      builder.append(item);
+      first = false;
+    }
+    return builder.toString();
+  }
+  
+  /**
    * Executes the given experiments.
    */
   public void run(Experiment[] experiments) {
@@ -724,52 +864,55 @@ public class WordSenseMapper {
     String propBankTroponymPath = outputPath + "propbank-to-propbank-troponyms.tsv";
     
     for (Experiment experiment : experiments) {
-      if (Experiment.MAKE_TABLES.equals(experiment)) {
-        Map<String, Map<String, Integer>> synonymMap = makeSynonymMap();
-        Map<String, Map<String, Integer>> inverseMap = makeInverseMap(synonymMap);
-        List<SenseTableEntry> senseTable = makeSenseTable();
-        List<SenseTableEntry> troponymTable = makeTroponymTable();
-        makeWordToSenseMap();
-        try {
-          BufferedWriter outputWriter = new BufferedWriter(new FileWriter(wordsPath));
-          BufferedWriter inverseWriter = new BufferedWriter(new FileWriter(inversePath));
-          BufferedWriter tableWriter = new BufferedWriter(new FileWriter(tablePath));
-          BufferedWriter propBankSynWriter = new BufferedWriter(new FileWriter(propBankSynonymPath));
-          BufferedWriter troponymWriter = new BufferedWriter(new FileWriter(troponymPath));
-          BufferedWriter propBankTropWriter = new BufferedWriter(new FileWriter(propBankTroponymPath));
-          outputMap(synonymMap, outputWriter);
-          outputMap(inverseMap, inverseWriter);
-          outputSenseTable(senseTable, tableWriter);
-          outputPropBankTable(propBankSynWriter);
-          outputSenseTable(troponymTable, troponymWriter);
-          outputPropBankTroponymTable(propBankTropWriter);
-          outputWriter.close();
-          inverseWriter.close();
-          tableWriter.close();
-          propBankSynWriter.close();
-          troponymWriter.close();
-          propBankTropWriter.close();
-        } catch (IOException e) {
-          throw new RuntimeException("Error writing output files.", e);
-        }
-      } else if (Experiment.COMPUTE_TRANSITIVE_CLOSURE.equals(experiment)){
-        findPropBankTransitiveClosure();
-      } else {
+      switch (experiment) {
+        case MAKE_TABLES:
+          Map<String, Map<String, Integer>> synonymMap = makeSynonymMap();
+          Map<String, Map<String, Integer>> inverseMap = makeInverseMap(synonymMap);
+          List<SenseTableEntry> senseTable = makeSenseTable();
+          List<SenseTableEntry> troponymTable = makeTroponymTable();
+          makeWordToSenseMap();
+          try {
+            BufferedWriter outputWriter = new BufferedWriter(new FileWriter(wordsPath));
+            BufferedWriter inverseWriter = new BufferedWriter(new FileWriter(inversePath));
+            BufferedWriter tableWriter = new BufferedWriter(new FileWriter(tablePath));
+            BufferedWriter propBankSynWriter = new BufferedWriter(new FileWriter(propBankSynonymPath));
+            BufferedWriter troponymWriter = new BufferedWriter(new FileWriter(troponymPath));
+            BufferedWriter propBankTropWriter = new BufferedWriter(new FileWriter(propBankTroponymPath));
+            outputMap(synonymMap, outputWriter);
+            outputMap(inverseMap, inverseWriter);
+            outputSenseTable(senseTable, tableWriter);
+            outputPropBankTable(propBankSynWriter);
+            outputSenseTable(troponymTable, troponymWriter);
+            outputPropBankTroponymTable(propBankTropWriter);
+            outputWriter.close();
+            inverseWriter.close();
+            tableWriter.close();
+            propBankSynWriter.close();
+            troponymWriter.close();
+            propBankTropWriter.close();
+          } catch (IOException e) {
+            throw new RuntimeException("Error writing output files.", e);
+          }
+          break;
+        case COMPUTE_TRANSITIVE_CLOSURE:
+          findPropBankTransitiveClosure();
+          break;
+        case CREATE_BENCHMARK:
+          createBenchmark();
+          break;
       }
     }
   }
   
   enum Experiment {
-    MAKE_TABLES, COMPUTE_TRANSITIVE_CLOSURE;
+    MAKE_TABLES, COMPUTE_TRANSITIVE_CLOSURE, CREATE_BENCHMARK;
   }
   
   /**
    * Parses args and starts the program.
    * @param args
-   *    pbToWnFile: The file mapping PropBank senses to WordNet senses. See {@link getMapping}.
-   *    wordNetPath: The path of the WordNet dict folder.
-   *    outputFile: The name of the output file. The inverse will be given the same name, but with
-   *        -inverse added to it.
+   *    inputDir: The directory with all the input files in it.
+   *    outputDir: The directory where all the output files should be.
    */
   public static void main(String[] args) {
     if (args.length != 2) {
@@ -783,7 +926,7 @@ public class WordSenseMapper {
     String outputDir = args[1];
 
     WordSenseMapper mapper = new WordSenseMapper(inputDir, outputDir);
-    Experiment[] experiments = {Experiment.COMPUTE_TRANSITIVE_CLOSURE};
+    Experiment[] experiments = {Experiment.CREATE_BENCHMARK};
     mapper.run(experiments);
   }
 }
