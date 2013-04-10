@@ -45,16 +45,16 @@ import edu.mit.jwi.item.SynsetID;
  */
 public class WordSenseMapper {
   IDictionary wordNet;
-  String inputPath;
-  String outputPath;
+  String inputDir;
+  String outputDir;
   /** Maps PropBank senses to sets of WordNet sense keys. */
   Map<String, Set<ISenseKey>> senseIds;
   /** Maps WordNet synset IDs (from the sense keys of senseIds) to PropBank senses. */
   Map<ISynsetID, Set<String>> senseIdsInverse;
   
   public WordSenseMapper(String inputPath, String outputPath) {
-    this.inputPath = inputPath;
-    this.outputPath = outputPath;
+    this.inputDir = inputPath;
+    this.outputDir = outputPath;
     
     String wordNetPath = inputPath + "WordNet-3.0/dict/";
     try {
@@ -74,7 +74,7 @@ public class WordSenseMapper {
    * we just add "::" to the end of each.
    */
   private void readPropBankToWordNetMapping() {
-    String pbToWnPath = inputPath + "VN-WN.txt";
+    String pbToWnPath = inputDir + "VN-WN.txt";
     
     senseIds = new HashMap<String, Set<ISenseKey>>();
     senseIdsInverse = new HashMap<ISynsetID, Set<String>>();
@@ -338,7 +338,7 @@ public class WordSenseMapper {
     // Output
     try {
       BufferedWriter writer = new BufferedWriter(new FileWriter(
-        outputPath + "words-to-senses.tsv"
+        outputDir + "words-to-senses.tsv"
       ));
       
       for (String word : wordSenseMap.keySet()) {
@@ -416,10 +416,12 @@ public class WordSenseMapper {
       for (ISenseKey senseKey : senseIds.get(propBankSense)) {
         ISenseEntry senseEntry = wordNet.getSenseEntry(senseKey);
         ISynsetID synsetId = new SynsetID(senseEntry.getOffset(), senseEntry.getPOS());
+        int tagCount = senseEntry.getTagCount();
+        
         for (String synonymousPropBankSense : senseIdsInverse.get(synsetId)) {
           String line = new StringBuilder(propBankSense).append("\t")
-            .append(senseEntry.getOffset()).append("\t")
-            .append(synonymousPropBankSense).append("\n")
+            .append(synonymousPropBankSense).append("\t")
+            .append(tagCount).append("\n")
             .toString();
           try {
             writer.write(line);
@@ -441,6 +443,7 @@ public class WordSenseMapper {
         ISenseEntry senseEntry = wordNet.getSenseEntry(senseKey);
         ISynsetID synsetId = new SynsetID(senseEntry.getOffset(), senseEntry.getPOS());
         ISynset synset = wordNet.getSynset(synsetId);
+        int tagCount = senseEntry.getTagCount();
         
         for (ISynsetID relatedSynsetId : synset.getRelatedSynsets(Pointer.HYPONYM)) {
           if (!senseIdsInverse.containsKey(relatedSynsetId)) {
@@ -468,7 +471,7 @@ public class WordSenseMapper {
    */
   private Map<String, Set<String>> getPropbankToPropbankSynonyms() {
     Map<String, Set<String>> propbankTroponymsToSenses = new HashMap<>();
-    String propbankSynonymPath = outputPath + "propbank-to-propbank-synonyms.tsv";
+    String propbankSynonymPath = outputDir + "propbank-to-propbank-synonyms.tsv";
     try {
       BufferedReader reader = new BufferedReader(new FileReader(propbankSynonymPath));
       while(reader.ready()) {
@@ -496,14 +499,15 @@ public class WordSenseMapper {
    */
   private Map<String, Set<String>> getStringToPropbankSynonyms() {
     Map<String, Set<String>> stringToPropbankSenses = new HashMap<>();
-    String propbankTroponymPath = outputPath + "propbank-to-synonyms.tsv";
+    String propbankTroponymPath = outputDir + "propbank-to-synonyms.tsv";
     try {
       BufferedReader reader = new BufferedReader(new FileReader(propbankTroponymPath));
       while(reader.ready()) {
         String line = reader.readLine();
         String[] columns = line.split("\t");
-        String string = columns[3].trim();
         String propbankSense = columns[0].trim();
+        int count = Integer.parseInt(columns[2].trim());
+        String string = columns[3].trim();
         if (stringToPropbankSenses.containsKey(string)) {
           stringToPropbankSenses.get(string).add(propbankSense);
         } else {
@@ -521,7 +525,7 @@ public class WordSenseMapper {
   
   private Map<String, Set<String>> getPropbankToPropbankEntailments() {
     Map<String, Set<String>> propbankTroponymsToSenses = new HashMap<>();
-    String propbankTroponymPath = outputPath + "propbank-to-propbank-troponyms.tsv";
+    String propbankTroponymPath = outputDir + "propbank-to-propbank-troponyms.tsv";
     try {
       BufferedReader reader = new BufferedReader(new FileReader(propbankTroponymPath));
       while(reader.ready()) {
@@ -549,7 +553,7 @@ public class WordSenseMapper {
    */
   private Map<String, Set<String>> getStringToPropbankEntailments() {
     Map<String, Set<String>> stringToPropbankSenses = new HashMap<>();
-    String propbankTroponymPath = outputPath + "propbank-to-troponyms.tsv";
+    String propbankTroponymPath = outputDir + "propbank-to-troponyms.tsv";
     try {
       BufferedReader reader = new BufferedReader(new FileReader(propbankTroponymPath));
       while(reader.ready()) {
@@ -700,7 +704,7 @@ public class WordSenseMapper {
       }
       
       try {
-        File outputFile = new File(outputPath + "tc/" + testString + ".tsv");
+        File outputFile = new File(outputDir + "tc/" + testString + ".tsv");
         outputFile.createNewFile();
         BufferedWriter writer = new BufferedWriter(new FileWriter(outputFile));
         writer.write("Final senses:\n");
@@ -729,7 +733,7 @@ public class WordSenseMapper {
    * Quick and dirty method that creates a benchmark set of Open IE tuples.
    */
   private void createBenchmark() {
-    String openiePath = inputPath + "openie_100.txt";
+    String openiePath = inputDir + "openie_100.txt";
     Map<String, Set<String>> stringToPropbankEntailments = getStringToPropbankEntailments();
     Map<String, Set<String>> stringToPropbankSynonyms = getStringToPropbankSynonyms();
     
@@ -856,12 +860,12 @@ public class WordSenseMapper {
   public void run(Experiment[] experiments) {
     readPropBankToWordNetMapping();
     
-    String wordsPath = outputPath + "propbank-to-words.tsv";
-    String inversePath = outputPath + "propbank-to-words-inverse.tsv";
-    String tablePath = outputPath + "propbank-to-synonyms.tsv";
-    String propBankSynonymPath = outputPath + "propbank-to-propbank-synonyms.tsv";
-    String troponymPath = outputPath + "propbank-to-troponyms.tsv";
-    String propBankTroponymPath = outputPath + "propbank-to-propbank-troponyms.tsv";
+    String wordsPath = outputDir + "propbank-to-words.tsv";
+    String inversePath = outputDir + "propbank-to-words-inverse.tsv";
+    String tablePath = outputDir + "propbank-to-synonyms.tsv";
+    String propBankSynonymPath = outputDir + "propbank-to-propbank-synonyms.tsv";
+    String troponymPath = outputDir + "propbank-to-troponyms.tsv";
+    String propBankTroponymPath = outputDir + "propbank-to-propbank-troponyms.tsv";
     
     for (Experiment experiment : experiments) {
       switch (experiment) {
