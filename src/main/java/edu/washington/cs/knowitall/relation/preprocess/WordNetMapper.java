@@ -9,8 +9,10 @@ import java.io.IOException;
 import java.io.Writer;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import edu.mit.jwi.Dictionary;
 import edu.mit.jwi.IDictionary;
@@ -50,7 +52,7 @@ public class WordNetMapper {
    */
   private List<PbToWnMapping> getPbToWnMappings() {
     String mappingPath = inputDir + "pb-wn.tsv";
-    List<PbToWnMapping> pbToWnMappings = new ArrayList<>();
+    List<PbToWnMapping> pbToWnMappings = new ArrayList<PbToWnMapping>();
     try {
       BufferedReader reader = new BufferedReader(new FileReader(mappingPath));
       while (reader.ready()) {
@@ -65,14 +67,14 @@ public class WordNetMapper {
         IWord word = wordNet.getWord(wordId);
         
         ISynset synset = word.getSynset();
-        Map<IWord, Integer> synonymCounts = new HashMap<>();
+        Map<IWord, Integer> synonymCounts = new HashMap<IWord, Integer>();
         for (IWord synonym : synset.getWords()) {
           int count = wordNet.getSenseEntry(synonym.getSenseKey()).getTagCount();
           synonymCounts.put(synonym, count);
         }
         
         List<ISynsetID> hyponymSynsetIds = synset.getRelatedSynsets(Pointer.HYPONYM);
-        Map<IWord, Integer> hyponymCounts = new HashMap<>();
+        Map<IWord, Integer> hyponymCounts = new HashMap<IWord, Integer>();
         for (ISynsetID hyponymSynsetId : hyponymSynsetIds) {
           ISynset hyponymSynset = wordNet.getSynset(hyponymSynsetId);
           for (IWord hyponym : hyponymSynset.getWords()) {
@@ -157,6 +159,22 @@ public class WordNetMapper {
 
     WordNetMapper mapper = new WordNetMapper(inputDir, outputDir);
     mapper.run();
+  }
+}
+
+class PbToPbMapping {
+  Set<String> pbSynonyms;
+  Set<String> pbHyponyms;
+  public PbToPbMapping(Set<String> pbSynonyms, Set<String> pbHyponyms) {
+    super();
+    this.pbSynonyms = pbSynonyms;
+    this.pbHyponyms = pbHyponyms;
+  }
+  public Set<String> getPbSynonyms() {
+    return pbSynonyms;
+  }
+  public Set<String> getPbHyponyms() {
+    return pbHyponyms;
   }
 }
 
