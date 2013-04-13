@@ -41,39 +41,53 @@ object ReverbSrlRunner extends ScoobiApp {
       ReVerbExtractionGroup.deserializeFromString(line) match {
         case Some(group) => {
           group.instances.flatMap { instance =>
-            val arg1Text = instance.extraction.arg1Text
-            val relText = instance.extraction.relText
-            val arg2Text = instance.extraction.arg2Text
+            val extraction = instance.extraction
+            val arg1Text = extraction.arg1Text
+            val relText = extraction.relText
+            val arg2Text = extraction.arg2Text
+            val sentenceLength = extraction.arg1Tokens.length + extraction.relTokens.length
+              + extraction.arg2Tokens.length
             val sentence = List(arg1Text, relText, arg2Text).mkString(" ")
-            try {
-              val graph = clearParser.dependencyGraph(sentence)
-              val frames = clearSrl(graph);
-              val relLink = if (frames.isEmpty) {
-                None
-              } else {
-                Some(frames(0).relation.toString())
-              }
-              val key = List(
-                group.arg1.norm,
-                group.rel.norm,
-                group.arg2.norm,
-                ReVerbExtractionGroup.serializeEntity(group.arg1.entity),
-                ReVerbExtractionGroup.serializeEntity(group.arg2.entity),
-                ReVerbExtractionGroup.serializeTypeList(group.arg1.types),
-                ReVerbExtractionGroup.serializeTypeList(group.arg2.types),
-                relLink.getOrElse("X")
-              ).mkString("\t")
-              val value = ReVerbInstanceSerializer.serializeToString(instance)
-              
-              Some(key, value)
-            } catch {
-              case e: Error => {
-                System.err.println("ReverbSrlRunner: error processing " + sentence + ": " + e);
-                None
-              }
-              case e: Exception => {
-                System.err.println("ReverbSrlRunner: exception processing " + sentence + ": " + e);
-                None
+            if (sentenceLength > 60) {
+              None
+            } else {
+              try {
+                val graph = clearParser.dependencyGraph(sentence)
+                val frames = clearSrl(graph);
+                
+                val relLink = if (frames.isEmpty) {
+                  None
+                } else {
+                  val frameIndex = frames.lastIndexWhere(_.relation.node.postag.startsWith("V"))
+                  if (frameIndex < 0) {
+                    None
+                  } else {
+                    Some(frames(frameIndex).relation.toString())
+                  }
+                }
+                val key = List(
+                  group.arg1.norm,
+                  group.rel.norm,
+                  group.arg2.norm,
+                  ReVerbExtractionGroup.serializeEntity(group.arg1.entity),
+                  ReVerbExtractionGroup.serializeEntity(group.arg2.entity),
+                  ReVerbExtractionGroup.serializeTypeList(group.arg1.types),
+                  ReVerbExtractionGroup.serializeTypeList(group.arg2.types),
+                  relLink.getOrElse("X")
+                ).mkString("\t")
+                val value = ReVerbInstanceSerializer.serializeToString(instance)
+                
+                Some(key, value)
+              } catch {
+                case e: Error => {
+                  System.err.println("ReverbSrlRunner: error processing " + sentence + ": " + e);
+                  None
+                }
+                case e: Exception => {
+                  System.err.println("ReverbSrlRunner: exception processing " + sentence + ": "
+                    + e);
+                  None
+                }
               }
             }
           }
