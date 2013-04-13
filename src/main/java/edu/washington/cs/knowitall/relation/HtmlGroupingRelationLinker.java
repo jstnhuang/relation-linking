@@ -30,7 +30,7 @@ public class HtmlGroupingRelationLinker implements RelationLinker {
     PreparedStatement selectStatement = null;
     try {
       selectStatement = connection.prepareStatement(
-        "SELECT pb, prob, count FROM str_to_pb_syns WHERE vp=? order by prob desc fetch first 10 rows only"
+        "SELECT pb, prob, count FROM str_to_pb_syn WHERE vp=? ORDER BY prob DESC FETCH FIRST 10 ROWS ONLY"
       );
       selectStatement.setString(1, relationPhrase);
       ResultSet resultSet = selectStatement.executeQuery();
