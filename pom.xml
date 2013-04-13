@@ -7,7 +7,7 @@
     <version>2.1.1</version>
   </parent>
   <artifactId>relationlinking</artifactId>
-  <version>1.0-SNAPSHOT</version>
+  <version>1.0.1-SNAPSHOT</version>
   <packaging>jar</packaging>
   <name>Relation linking code.</name>
   <repositories>
@@ -59,10 +59,31 @@
       <artifactId>nlptools-srl-clear_2.9.2</artifactId>
       <version>2.4.0</version>
     </dependency>
+    <dependency>
+      <groupId>org.apache.derby</groupId>
+      <artifactId>derby</artifactId>
+      <version>10.9.1.0</version>
+    </dependency>
   </dependencies>
   <build>
     <sourceDirectory>src/main/scala</sourceDirectory>
     <plugins>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <phase>generate-sources</phase>
+            <goals><goal>add-source</goal></goals>
+            <configuration>
+              <sources>
+                <source>src/main/java</source>
+                <source>src/main/scala</source>
+              </sources>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
       <plugin>
         <groupId>org.scala-tools</groupId>
         <artifactId>maven-scala-plugin</artifactId>
@@ -91,7 +112,7 @@
           <archive>
             <manifest>
               <mainClass>
-                edu.washington.cs.knowitall.browser.hadoop.scoobi.ReverbSrlRunner
+                edu.washington.cs.knowitall.relation.experiment.RelationInferenceExperiment
               </mainClass>
             </manifest>
           </archive>
