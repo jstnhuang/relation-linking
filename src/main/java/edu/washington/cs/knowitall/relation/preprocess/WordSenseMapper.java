@@ -301,7 +301,7 @@ public class WordSenseMapper {
   }
   
   private void makeWordToSenseMap() {
-    Map<String, Map<ISenseKey, Integer>> wordSenseMap = new HashMap<>();
+    Map<String, Map<ISenseKey, Integer>> wordSenseMap = new HashMap<String, Map<ISenseKey, Integer>>();
     
     Iterator<IIndexWord> indexWordIterator = wordNet.getIndexWordIterator(POS.VERB);
     while (indexWordIterator.hasNext()) {
@@ -327,7 +327,7 @@ public class WordSenseMapper {
             }
             wordSenseMap.put(synWord.getLemma(), senseCounts);
           } else {
-            Map<ISenseKey, Integer> senseCounts = new HashMap<>();
+            Map<ISenseKey, Integer> senseCounts = new HashMap<ISenseKey, Integer>();
             senseCounts.put(senseKey, count);
             wordSenseMap.put(synWord.getLemma(), senseCounts);
           }
@@ -470,7 +470,7 @@ public class WordSenseMapper {
    * Makes table from PropBank senses to synonymous PropBank senses.
    */
   private Map<String, Set<String>> getPropbankToPropbankSynonyms() {
-    Map<String, Set<String>> propbankTroponymsToSenses = new HashMap<>();
+    Map<String, Set<String>> propbankTroponymsToSenses = new HashMap<String, Set<String>>();
     String propbankSynonymPath = outputDir + "propbank-to-propbank-synonyms.tsv";
     try {
       BufferedReader reader = new BufferedReader(new FileReader(propbankSynonymPath));
@@ -498,7 +498,7 @@ public class WordSenseMapper {
    * Makes table from PropBank senses to synonymous verb phrases.
    */
   private Map<String, Set<String>> getStringToPropbankSynonyms() {
-    Map<String, Set<String>> stringToPropbankSenses = new HashMap<>();
+    Map<String, Set<String>> stringToPropbankSenses = new HashMap<String, Set<String>>();
     String propbankTroponymPath = outputDir + "propbank-to-synonyms.tsv";
     try {
       BufferedReader reader = new BufferedReader(new FileReader(propbankTroponymPath));
@@ -524,7 +524,7 @@ public class WordSenseMapper {
   }
   
   private Map<String, Set<String>> getPropbankToPropbankEntailments() {
-    Map<String, Set<String>> propbankTroponymsToSenses = new HashMap<>();
+    Map<String, Set<String>> propbankTroponymsToSenses = new HashMap<String, Set<String>>();
     String propbankTroponymPath = outputDir + "propbank-to-propbank-troponyms.tsv";
     try {
       BufferedReader reader = new BufferedReader(new FileReader(propbankTroponymPath));
@@ -552,7 +552,7 @@ public class WordSenseMapper {
    * Makes table from PropBank senses to PropBank troponyms.
    */
   private Map<String, Set<String>> getStringToPropbankEntailments() {
-    Map<String, Set<String>> stringToPropbankSenses = new HashMap<>();
+    Map<String, Set<String>> stringToPropbankSenses = new HashMap<String, Set<String>>();
     String propbankTroponymPath = outputDir + "propbank-to-troponyms.tsv";
     try {
       BufferedReader reader = new BufferedReader(new FileReader(propbankTroponymPath));
@@ -659,7 +659,7 @@ public class WordSenseMapper {
     testStrings.addAll(stringToPropbankSynonyms.keySet());
     
     for (String testString : testStrings) {
-      LinkedList<TransitiveClosurePath> queue = new LinkedList<>();
+      LinkedList<TransitiveClosurePath> queue = new LinkedList<TransitiveClosurePath>();
       if (useEntailments && stringToPropbankEntailments.containsKey(testString)) {
         for (String propbankSense : stringToPropbankEntailments.get(testString)) {
           TransitiveClosurePath path = new TransitiveClosurePath();
@@ -675,7 +675,7 @@ public class WordSenseMapper {
         }
       }
       
-      Set<TransitiveClosurePath> transitiveClosure = new HashSet<>();
+      Set<TransitiveClosurePath> transitiveClosure = new HashSet<TransitiveClosurePath>();
       Set<String> lastPbSenses = new TreeSet<String>();
       while (!queue.isEmpty()) {
         TransitiveClosurePath path = queue.removeFirst();
