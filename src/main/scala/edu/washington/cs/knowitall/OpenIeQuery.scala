@@ -17,7 +17,10 @@ class OpenIeQuery (
     arg1_entity: Option[String] = None,
     arg2_entity: Option[String] = None) {
   val relationLinks = rel match {
-    case Some(relString) => Some(OpenIeQuery.relationLinker.getRelationLinks(relString).asScala)
+    case Some(relString) => {
+      val normalizedString = OpenIeQuery.normalize(relString)
+      Some(OpenIeQuery.relationLinker.getRelationLinks(normalizedString).asScala)
+    }
     case None => None
   }
   
@@ -25,33 +28,46 @@ class OpenIeQuery (
    * Makes a Solr query string based on the fields of the query.
    */
   def getQueryString(rlinking: Boolean = false): String = {
-    val simpleNames = List("arg1", "arg2", "arg1_types", "arg2_types", "arg1_entity", "arg2_entity")
-    val simpleParts = List(arg1, arg2, arg1Type, arg2Type, arg1_entity, arg2_entity)
-    val simpleQuery = (simpleNames zip simpleParts).map({ tuple =>
+    val argNames = List("arg1", "arg2")
+    val argValues = List(
+      OpenIeQuery.getNormalizedArgString(arg1),
+      OpenIeQuery.getNormalizedArgString(arg2)
+    )
+    val argQuery = (argNames zip argValues).map({ tuple =>
+      tuple match {
+        case (name, Some(part)) => Some("+%s: (%s)".format(name, part))
+        case _ => None
+      }
+    }).flatMap(x => x).mkString(" ")
+    
+    val otherNames = List("arg1_types", "arg2_types", "arg1_entity_id", "arg2_entity_id")
+    val otherValues = List(arg1Type, arg2Type, arg1_entity, arg2_entity)
+    val otherQuery = (otherNames zip otherValues).map({ tuple =>
       tuple match {
         case (name, Some(part)) => Some("+%s: (\"%s\")".format(name, part))
         case _ => None
       }
     }).flatMap(x => x).mkString(" ")
+    
     val relQuery = rel match {
       case Some(relString) => {
+        val normalizedString = OpenIeQuery.normalize(relString)
         val rlinkString = if(rlinking) {
-          
           if (relationLinks.isEmpty || relationLinks.get.isEmpty) {
             ""
           } else {
-            val allLinksString = relationLinks.map(x => "\"%s\"".format(x)).mkString(" OR ")
+            val allLinksString = relationLinks.get.map(x => "\"%s\"".format(x)).mkString(" OR ")
             " OR rel_link_id: (%s)".format(allLinksString)
           }
           
         } else {
           ""
         }
-        "+(rel: (\"%s\")".format(relString) + rlinkString + ")"
+        "+(rel: (\"%s\")".format(normalizedString) + rlinkString + ")"
       }
       case _ => ""
     }
-    List(simpleQuery, relQuery).mkString(" ")
+    List(argQuery, otherQuery, relQuery).mkString(" ").trim()
   }
 }
 
@@ -59,7 +75,23 @@ object OpenIeQuery {
   val relationLinker = new HtmlGroupingRelationLinker("/scratch2/rlinking/")
   val tokenizer = new OpenNlpTokenizer()
   
-  def normalizeTerms(terms: String): String = {
+  def getNormalizedArgString(string: Option[String]): Option[String] = {
+    string match {
+      case Some(str) => Some(getQueryTerms(str).map({x => "\"%s\"".format(x)}).mkString(" OR "))
+      case None => None
+    }
+  }
+  
+  def getQueryTerms(term: String): Set[String] = {
+    val normalizedTerm = normalize(term)
+    if (normalizedTerm != term) {
+      Set(normalizedTerm, term)
+    } else {
+      Set(term)
+    }
+  }
+  
+  def normalize(terms: String): String = {
     val tokenized = tokenizer.synchronized {
       tokenizer.tokenize(terms)
     }
@@ -83,9 +115,7 @@ object OpenIeQuery {
       Some(arg2String.substring(5))
     } else { None }
     
-    arg1 = arg1 map normalizeTerms
-    val rel = Some(normalizeTerms(relString))
-    arg2 = arg2 map normalizeTerms
+    val rel = Some(relString)
     
     new OpenIeQuery(
       arg1=arg1, rel=rel, arg2=arg2,
