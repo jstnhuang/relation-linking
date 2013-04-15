@@ -2,6 +2,8 @@ package edu.washington.cs.knowitall
 
 import edu.washington.cs.knowitall.relation.HtmlGroupingRelationLinker
 import scala.collection.JavaConverters._
+import edu.knowitall.tool.tokenize.OpenNlpTokenizer
+import edu.knowitall.tool.stem.MorphaStemmer
 
 /**
  * A not fully featured class representing an Open IE query.
@@ -14,7 +16,10 @@ class OpenIeQuery (
     arg2Type: Option[String] = None,
     arg1_entity: Option[String] = None,
     arg2_entity: Option[String] = None) {
-  val relationLinker = new HtmlGroupingRelationLinker("/scratch2/rlinking/")
+  val relationLinks = rel match {
+    case Some(relString) => Some(OpenIeQuery.relationLinker.getRelationLinks(relString).asScala)
+    case None => None
+  }
   
   /**
    * Makes a Solr query string based on the fields of the query.
@@ -31,8 +36,8 @@ class OpenIeQuery (
     val relQuery = rel match {
       case Some(relString) => {
         val rlinkString = if(rlinking) {
-          val relationLinks = relationLinker.getRelationLinks(relString).asScala
-          if (relationLinks.isEmpty) {
+          
+          if (relationLinks.isEmpty || relationLinks.get.isEmpty) {
             ""
           } else {
             val allLinksString = relationLinks.map(x => "\"%s\"".format(x)).mkString(" OR ")
@@ -51,6 +56,16 @@ class OpenIeQuery (
 }
 
 object OpenIeQuery {
+  val relationLinker = new HtmlGroupingRelationLinker("/scratch2/rlinking/")
+  val tokenizer = new OpenNlpTokenizer()
+  
+  def normalizeTerms(terms: String): String = {
+    val tokenized = tokenizer.synchronized {
+      tokenizer.tokenize(terms)
+    }
+    (tokenized.map(_.string) map MorphaStemmer.lemmatize).mkString(" ")
+  }
+  
   /**
    * Constructs an OpenIeQuery instance given the raw strings from the query. The args may contain
    * fields like "type:Organization" or "entity:Paris", although this doesn't support entities right
@@ -68,8 +83,12 @@ object OpenIeQuery {
       Some(arg2String.substring(5))
     } else { None }
     
+    arg1 = arg1 map normalizeTerms
+    val rel = Some(normalizeTerms(relString))
+    arg2 = arg2 map normalizeTerms
+    
     new OpenIeQuery(
-      arg1=arg1, rel=Some(relString), arg2=arg2,
+      arg1=arg1, rel=rel, arg2=arg2,
       arg1Type=arg1Type, arg2Type=arg2Type
     )
   }
