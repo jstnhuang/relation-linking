@@ -43,13 +43,13 @@ class RelationInferenceExperiment (solrUrl: String, inputDir: String, outputDir:
   }
   
   def runQuery(query: OpenIeQuery, rlinking: Boolean):
-      List[ExtractionGroup[ReVerbExtraction]] = {
+      Set[ExtractionGroup[ReVerbExtraction]] = {
     val queryText = query.getQueryString(rlinking)
-    solrExecutor.execute(queryText).toList
+    solrExecutor.execute(queryText).toSet
   }
   
-  def outputStats(query: OpenIeQuery, groupsWithRlinking: List[ExtractionGroup[ReVerbExtraction]],
-      groupsWithoutRlinking: List[ExtractionGroup[ReVerbExtraction]], writer: BufferedWriter):
+  def outputStats(query: OpenIeQuery, groupsWithRlinking: Set[ExtractionGroup[ReVerbExtraction]],
+      groupsWithoutRlinking: Set[ExtractionGroup[ReVerbExtraction]], writer: BufferedWriter):
       Unit = {
     writer.write(query.getQueryString(false))
     writer.newLine()
@@ -69,28 +69,27 @@ class RelationInferenceExperiment (solrUrl: String, inputDir: String, outputDir:
     writer.newLine()
   }
   
-  def outputSentences(query: OpenIeQuery, groupsWithRlinking: List[ExtractionGroup[ReVerbExtraction]],
-      groupsWithoutRlinking: List[ExtractionGroup[ReVerbExtraction]], writer: BufferedWriter): Unit = {
+  def outputSentences(query: OpenIeQuery, groupsWithRlinking: Set[ExtractionGroup[ReVerbExtraction]],
+      groupsWithoutRlinking: Set[ExtractionGroup[ReVerbExtraction]], writer: BufferedWriter): Unit = {
     writer.write(query.getQueryString(false))
     writer.newLine()
-    writer.write("  Without linking:")
+    writer.write("  Unique groups without linking:")
     writer.newLine()
-    groupsWithoutRlinking.foreach({ group =>
+    (groupsWithoutRlinking -- groupsWithRlinking).foreach({ group =>
       writer.write("    (%s, %s, %s)".format(
         group.arg1.norm, group.rel.norm, group.arg2.norm
       ))
       writer.newLine()
-      group.instances.take(2).foreach({instance =>
-        writer.write("      " + instance.extraction.sentenceText)
+      group.instances.take(5).foreach({instance =>
+        val sentenceText = instance.extraction.sentenceText
+        writer.write("      " + sentenceText)
         writer.newLine()
       })
-      writer.newLine()
     })
-    writer.newLine()
     
-    writer.write("  With linking: ")
+    writer.write("  Unique groups with linking: ")
     writer.newLine()
-    groupsWithRlinking.foreach({ group =>
+    (groupsWithRlinking -- groupsWithoutRlinking).foreach({ group =>
       writer.write("    (%s, %s, %s)".format(
         group.arg1.norm, group.rel.norm, group.arg2.norm
       ))
@@ -100,7 +99,6 @@ class RelationInferenceExperiment (solrUrl: String, inputDir: String, outputDir:
         writer.newLine()
       })
     })
-    writer.newLine()
     writer.newLine()
   }
   
