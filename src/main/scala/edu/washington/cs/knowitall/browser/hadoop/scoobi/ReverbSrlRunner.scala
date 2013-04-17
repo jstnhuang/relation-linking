@@ -17,6 +17,7 @@ import scopt.OptionParser
 import edu.washington.cs.knowitall.browser.extraction.Instance
 import edu.washington.cs.knowitall.browser.extraction.ReVerbExtraction
 import edu.washington.cs.knowitall.browser.extraction.ReVerbInstanceSerializer
+import edu.knowitall.collection.immutable.Interval
 
 object ReverbSrlRunnerStaticVars {
   val clearParser = new ClearParser() 
@@ -42,23 +43,21 @@ object ReverbSrlRunner extends ScoobiApp {
         case Some(group) => {
           group.instances.flatMap { instance =>
             val extraction = instance.extraction
-            val arg1Text = extraction.arg1Text
-            val relText = extraction.relText
-            val arg2Text = extraction.arg2Text
-            val sentenceLength = extraction.arg1Tokens.length + extraction.relTokens.length
-              + extraction.arg2Tokens.length
-            val sentence = List(arg1Text, relText, arg2Text).mkString(" ")
-            if (sentenceLength > 60) {
+            val sentenceText = extraction.sentenceText
+            
+            if (extraction.sentenceTokens.size > 80) {
               None
             } else {
               try {
-                val graph = clearParser.dependencyGraph(sentence)
+                val graph = clearParser.dependencyGraph(sentenceText)
                 val frames = clearSrl(graph);
                 
                 val relLink = if (frames.isEmpty) {
                   None
                 } else {
-                  val frameIndex = frames.lastIndexWhere(_.relation.node.postag.startsWith("V"))
+                  val frameIndex = frames.lastIndexWhere({ frame =>
+                    extraction.relInterval.superset(frame.relation.node.tokenInterval)
+                  })
                   if (frameIndex < 0) {
                     None
                   } else {
@@ -80,12 +79,15 @@ object ReverbSrlRunner extends ScoobiApp {
                 Some(key, value)
               } catch {
                 case e: Error => {
-                  System.err.println("ReverbSrlRunner: error processing " + sentence + ": " + e);
+                  System.err.println(
+                    "ReverbSrlRunner: error processing %s: %s".format(sentenceText, e)
+                  );
                   None
                 }
                 case e: Exception => {
-                  System.err.println("ReverbSrlRunner: exception processing " + sentence + ": "
-                    + e);
+                  System.err.println(
+                    "ReverbSrlRunner: exception processing %s: %s".format(sentenceText, e)
+                  );
                   None
                 }
               }
