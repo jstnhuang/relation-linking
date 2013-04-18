@@ -1,6 +1,7 @@
 package edu.washington.cs.knowitall.relation
 
 import edu.washington.cs.knowitall.model.PropbankSense
+import scala.collection.mutable.Map
 
 object EntailmentGraphEdgeType extends Enumeration {
   type EdgeType = Value
@@ -37,15 +38,15 @@ class EntailmentGraph {
   private def addEdge(p1: PropbankSense, p2: PropbankSense, edgeType: EdgeType): Unit = {
     edgeType match {
       case Synonym => {
-        synonymEdges = synonymEdges.get(p1) match {
-          case Some(senses) => synonymEdges + (p1 -> (senses+p2))
-          case None => synonymEdges + (p1 -> Set(p2))
+        synonymEdges.get(p1) match {
+          case Some(senses) => synonymEdges(p1) = senses + p2
+          case None => synonymEdges(p1) = Set(p2)
         }
       }
       case Hyponym => {
-        hyponymEdges = hyponymEdges.get(p1) match {
-          case Some(senses) => hyponymEdges + (p1 -> (senses+p2))
-          case None => hyponymEdges + (p1 -> Set(p2))
+        hyponymEdges.get(p1) match {
+          case Some(senses) => hyponymEdges(p1) = senses + p2
+          case None => hyponymEdges(p1) = Set(p2)
         }
       }
     }
@@ -53,3 +54,4 @@ class EntailmentGraph {
     nodes = nodes + p1 + p2
   }
 }
+
