@@ -9,9 +9,13 @@ import edu.washington.cs.knowitall.WordNetUtils
 import edu.washington.cs.knowitall.model.PropbankSense
 import scopt.OptionParser
 import java.io.FileWriter
+import edu.washington.cs.knowitall.model.PropbankGlossReader
 
-class EntailmentGraphGenerator(pbToWnPath: String, wnToPbPath: String, wordNetPath: String) {
+class EntailmentGraphGenerator(pbToWnPath: String, wnToPbPath: String, glossPath: String,
+    wordNetPath: String) {
   val wordNetUtils = new WordNetUtils(wordNetPath)
+  val pbGlossReader = new PropbankGlossReader(glossPath)
+  val pbGlosses = pbGlossReader.glosses
   val pbToWn = processPbToWn()
   val wnToPb = processWnToPb()
   
@@ -27,7 +31,8 @@ class EntailmentGraphGenerator(pbToWnPath: String, wnToPbPath: String, wordNetPa
     val lines = source.getLines.toList
     lines.groupBy({line =>
       val split = "\t".r.split(line)
-      PropbankSense.fromString(split(0))
+      val pbSense = split(0)
+      PropbankSense.fromString(pbSense, pbGlosses.getOrElse(pbSense, "Unknown gloss"))
     }).mapValues({ samePbLines =>
       samePbLines.map({ samePbLine =>
         val split = "\t".r.split(samePbLine)
@@ -52,7 +57,8 @@ class EntailmentGraphGenerator(pbToWnPath: String, wnToPbPath: String, wordNetPa
     }).mapValues({ sameWnLines =>
       sameWnLines.map({ sameWnLine =>
         val split = "\t".r.split(sameWnLine)
-        PropbankSense.fromString(split(2))
+        val pbSense = split(2)
+        PropbankSense.fromString(pbSense, pbGlosses.getOrElse(pbSense, "Unknown gloss"))
       }).toSet
     })
   }
@@ -85,7 +91,13 @@ class EntailmentGraphGenerator(pbToWnPath: String, wnToPbPath: String, wordNetPa
                     wordNetUtils.wordToString(synonym, tagCount=true),
                     pbSynonym
                   ).mkString(" = ")
-                  val row = List(propbankSense, pbSynonym, traceCol).mkString("\t")
+                  val row = List(
+                    propbankSense,
+                    pbSynonym,
+                    propbankSense.getGloss,
+                    pbSynonym.getGloss,
+                    traceCol
+                  ).mkString("\t")
                   writer.write(row)
                   writer.newLine()
                 }
@@ -113,7 +125,13 @@ class EntailmentGraphGenerator(pbToWnPath: String, wnToPbPath: String, wordNetPa
                       pbHyponym
                     ).mkString(" = ")
                   ).mkString(" => ")
-                  val row = List(propbankSense, pbHyponym, traceCol).mkString("\t")
+                  val row = List(
+                    propbankSense,
+                    pbHyponym,
+                    propbankSense.getGloss,
+                    pbHyponym.getGloss,
+                    traceCol
+                  ).mkString("\t")
                   writer.write(row)
                   writer.newLine()
                 }
@@ -141,8 +159,8 @@ object EntailmentGraphGenerator {
         })
       })
     }
-    writeEdges(graph.synonymEdges, "synonym")
-    writeEdges(graph.hyponymEdges, "entailment")
+    writeEdges(graph.synonymEdges.toMap, "synonym")
+    writeEdges(graph.hyponymEdges.toMap, "entailment")
     writer.flush()
     writer.close()
   }
@@ -160,12 +178,13 @@ object EntailmentGraphGenerator {
     val wordNetPath = List(inputDir, "WordNet-3.0", "dict").mkString(File.separator)
     val pbToWnPath = List(inputDir, "pb-wn.tsv").mkString(File.separator)
     val wnToPbPath = List(inputDir, "wn-pb.tsv").mkString(File.separator)
+    val glossPath = List(inputDir, "glosses.tsv").mkString(File.separator)
     
     val traceWriterPath = List(outputDir, "pb_trace.txt").mkString(File.separator)
     val graphWriterPath = List(outputDir, "pb_to_pb.txt").mkString(File.separator)
     val traceWriter = new BufferedWriter(new FileWriter(traceWriterPath))
     
-    val generator = new EntailmentGraphGenerator(pbToWnPath, wnToPbPath, wordNetPath)
+    val generator = new EntailmentGraphGenerator(pbToWnPath, wnToPbPath, glossPath, wordNetPath)
     val graph = generator.generateEntailmentGraph(traceWriter=Some(traceWriter))
     
     traceWriter.flush()
