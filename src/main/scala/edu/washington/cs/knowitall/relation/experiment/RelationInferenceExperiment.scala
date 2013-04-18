@@ -9,7 +9,7 @@ import scala.io.Source
 import org.apache.solr.client.solrj.SolrQuery
 import org.apache.solr.client.solrj.impl.HttpSolrServer
 import edu.knowitall.common.Resource.using
-import edu.washington.cs.knowitall.OpenIeQuery
+import edu.washington.cs.knowitall.model.OpenIeQuery
 import edu.washington.cs.knowitall.browser.extraction.ExtractionArgument
 import edu.washington.cs.knowitall.browser.extraction.ExtractionGroup
 import edu.washington.cs.knowitall.browser.extraction.ExtractionRelation

@@ -1,9 +1,10 @@
-package edu.washington.cs.knowitall
+package edu.washington.cs.knowitall.model
 
 import edu.washington.cs.knowitall.relation.HtmlGroupingRelationLinker
 import scala.collection.JavaConverters._
 import edu.knowitall.tool.tokenize.OpenNlpTokenizer
 import edu.knowitall.tool.stem.MorphaStemmer
+import scala.Option.option2Iterable
 
 /**
  * A not fully featured class representing an Open IE query.
