@@ -158,7 +158,7 @@ object EntailmentGraphGenerator {
     if (!parser.parse(args)) return
     
     val wordNetPath = List(inputDir, "WordNet-3.0", "dict").mkString(File.separator)
-    val pbToWnPath = List(inputDir, "pb-wn_1.tsv").mkString(File.separator)
+    val pbToWnPath = List(inputDir, "pb-wn.tsv").mkString(File.separator)
     val wnToPbPath = List(inputDir, "wn-pb.tsv").mkString(File.separator)
     
     val traceWriterPath = List(outputDir, "pb_trace.txt").mkString(File.separator)
