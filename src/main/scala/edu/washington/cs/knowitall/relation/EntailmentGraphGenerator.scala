@@ -32,7 +32,10 @@ class EntailmentGraphGenerator(pbToWnPath: String, wnToPbPath: String, glossPath
     lines.groupBy({line =>
       val split = "\t".r.split(line)
       val pbSense = split(0)
-      PropbankSense.fromString(pbSense, pbGlosses.getOrElse(pbSense, "Unknown gloss"))
+      val word = split(1)
+      val wordParts = "_".r.split(word)
+      val preps = if (wordParts.size <= 1) { None } else { Some(wordParts.drop(1).toList) }
+      PropbankSense.fromString(pbSense, pbGlosses.getOrElse(pbSense, "Unknown gloss"), preps)
     }).mapValues({ samePbLines =>
       samePbLines.map({ samePbLine =>
         val split = "\t".r.split(samePbLine)
@@ -57,8 +60,11 @@ class EntailmentGraphGenerator(pbToWnPath: String, wnToPbPath: String, glossPath
     }).mapValues({ sameWnLines =>
       sameWnLines.map({ sameWnLine =>
         val split = "\t".r.split(sameWnLine)
+        val word = split(0)
+        val wordParts = "_".r.split(word)
+        val preps = if (wordParts.size <= 1) { None } else { Some(wordParts.drop(1).toList) }
         val pbSense = split(2)
-        PropbankSense.fromString(pbSense, pbGlosses.getOrElse(pbSense, "Unknown gloss"))
+        PropbankSense.fromString(pbSense, pbGlosses.getOrElse(pbSense, "Unknown gloss"), preps)
       }).toSet
     })
   }
@@ -112,24 +118,24 @@ class EntailmentGraphGenerator(pbToWnPath: String, wnToPbPath: String, glossPath
         wnToPb.get(hyponym) match {
           case Some(pbHyponyms) => {
             pbHyponyms.foreach({ pbHyponym =>
-              entailmentGraph.addEntailment(propbankSense, pbHyponym);
+              entailmentGraph.addEntailment(pbHyponym, propbankSense);
               traceWriter match {
                 case Some(writer) => {
                   val traceCol = List(
                     List(
-                      propbankSense,
-                      wordNetUtils.wordToString(word, tagCount=true)
+                      pbHyponym,
+                      wordNetUtils.wordToString(hyponym, tagCount=true)
                     ).mkString(" = "),
                     List(
-                      wordNetUtils.wordToString(hyponym, tagCount=true),
-                      pbHyponym
+                      wordNetUtils.wordToString(word, tagCount=true),
+                      propbankSense
                     ).mkString(" = ")
                   ).mkString(" => ")
                   val row = List(
-                    propbankSense,
                     pbHyponym,
-                    propbankSense.getGloss,
+                    propbankSense,
                     pbHyponym.getGloss,
+                    propbankSense.getGloss,
                     traceCol
                   ).mkString("\t")
                   writer.write(row)
