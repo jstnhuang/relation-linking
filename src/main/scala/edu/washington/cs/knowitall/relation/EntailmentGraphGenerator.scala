@@ -6,73 +6,93 @@ import scala.io.Source
 import edu.mit.jwi.item.IWord
 import edu.mit.jwi.item.POS
 import edu.washington.cs.knowitall.WordNetUtils
-import edu.washington.cs.knowitall.model.PropbankSense
 import scopt.OptionParser
 import java.io.FileWriter
-import edu.washington.cs.knowitall.model.PropbankGlossReader
+import edu.washington.cs.knowitall.model.VerbNetSense
 
-class EntailmentGraphGenerator(pbToWnPath: String, wnToPbPath: String, glossPath: String,
-    wordNetPath: String) {
+class EntailmentGraphGenerator(vnToWnPath: String, wnToVnPath: String, wordNetPath: String) {
   val wordNetUtils = new WordNetUtils(wordNetPath)
-  val pbGlossReader = new PropbankGlossReader(glossPath)
-  val pbGlosses = pbGlossReader.glosses
-  val pbToWn = processPbToWn()
-  val wnToPb = processWnToPb()
-  
+  val vnToWn = processVnToWn()
+  val wnToVn = processWnToVn()
+    
   /**
    * Given a file with rows like:
-   *   elaborate.01 elaborate   1
-   *   elaborate.01 elaborate   4
+   *   vn_verb vn_sense vn_gloss wn_word wn_sense
    *   
-   * Get a map from Propbank senses to a set of WordNet senses.
+   * Get a map from VerbNet senses to a set of WordNet senses.
    */
-  private def processPbToWn(): Map[PropbankSense, Set[IWord]] = {
-    val source = Source.fromFile(pbToWnPath)
+  private def processVnToWn(): Map[VerbNetSense, Set[IWord]] = {
+    val source = Source.fromFile(vnToWnPath)
     val lines = source.getLines.toList
     lines.groupBy({line =>
       val split = "\t".r.split(line)
-      val pbSense = split(0)
-      val word = split(1)
-      val wordParts = "_".r.split(word)
+      val vnVerb = split(0)
+      val vnSense = split(1).toInt
+      val vnGloss = split(2)
+      val wnWord = split(3)
+      val wordParts = "_".r.split(wnWord)
       val preps = if (wordParts.size <= 1) { None } else { Some(wordParts.drop(1).toList) }
-      PropbankSense.fromString(pbSense, pbGlosses.getOrElse(pbSense, "Unknown gloss"), preps)
-    }).mapValues({ samePbLines =>
-      samePbLines.map({ samePbLine =>
-        val split = "\t".r.split(samePbLine)
-        wordNetUtils.getWordSense(split(1), POS.VERB, split(2).toInt)
+      VerbNetSense(vnVerb, vnSense, vnGloss, preps)
+    }).mapValues({ sameVnLines =>
+      sameVnLines.map({ sameVnLine =>
+        val split = "\t".r.split(sameVnLine)
+        val wnWord = split(3)
+        val wnSense = split(4).toInt
+        wordNetUtils.getWordSense(wnWord, POS.VERB, wnSense)
       }).toSet
     })
   }
   
   /**
    * Given a file with rows like:
-   *   bend 5   bend.01
-   *   bend 5   bend.02
+   *   wn_word wn_sense vn_verb vn_sense vn_gloss
    *   
-   * Get a map from Propbank senses to a set of WordNet senses.
+   * Get a map from WordNet senses to a set of VerbNet senses.
    */
-  private def processWnToPb(): Map[IWord, Set[PropbankSense]] = {
-    val source = Source.fromFile(wnToPbPath)
+  private def processWnToVn(): Map[IWord, Set[VerbNetSense]] = {
+    val source = Source.fromFile(wnToVnPath)
     val lines = source.getLines.toList
     lines.groupBy({line =>
       val split = "\t".r.split(line)
-      wordNetUtils.getWordSense(split(0), POS.VERB, split(1).toInt)
+      val wnWord = split(0)
+      val wnSense = split(1).toInt
+      wordNetUtils.getWordSense(wnWord, POS.VERB, wnSense)
     }).mapValues({ sameWnLines =>
       sameWnLines.map({ sameWnLine =>
         val split = "\t".r.split(sameWnLine)
-        val word = split(0)
-        val wordParts = "_".r.split(word)
+        val wnWord = split(0)
+        val vnVerb = split(2)
+        val vnSense = split(3).toInt
+        val vnGloss = split(4)
+        val wordParts = "_".r.split(wnWord)
         val preps = if (wordParts.size <= 1) { None } else { Some(wordParts.drop(1).toList) }
-        val pbSense = split(2)
-        PropbankSense.fromString(pbSense, pbGlosses.getOrElse(pbSense, "Unknown gloss"), preps)
+        VerbNetSense(vnVerb, vnSense, vnGloss, preps)
       }).toSet
+    })
+  }
+  
+  private def writeWnToVn(writer: BufferedWriter) = {
+    wnToVn.foreach({ case (wordNetSense, verbNetSenses) =>
+      val gloss = wordNetUtils.getGloss(wordNetSense)
+      val tagCount = wordNetUtils.getTagCount(wordNetSense)
+      verbNetSenses.foreach({ verbNetSense =>
+        val row = List(
+          wordNetUtils.wordToString(wordNetSense, senseNumber=true),
+          verbNetSense,
+          wordNetUtils.getGloss(wordNetSense),
+          verbNetSense.getGloss,
+          wordNetUtils.getTagCount(wordNetSense)
+        ).mkString("\t")
+        writer.write(row)
+        writer.newLine()
+      })
     })
   }
   
   def generateEntailmentGraph(traceWriter: Option[BufferedWriter] = None): EntailmentGraph = {
     val entailmentGraph = new EntailmentGraph
     
-    pbToWn.foreach({ case (propbankSense, wordNetSenses) =>
+    vnToWn.foreach({ case (verbNetSense, wordNetSenses) =>
       val synonyms = wordNetSenses.flatMap({ word =>
         wordNetUtils.getSynonyms(word).map({
           synonym => (word, synonym)
@@ -85,23 +105,23 @@ class EntailmentGraphGenerator(pbToWnPath: String, wnToPbPath: String, glossPath
       })
       
       synonyms.foreach({ case (word, synonym) =>
-        wnToPb.get(synonym) match {
-          case Some(pbSynonyms) => {
-            pbSynonyms.foreach({ pbSynonym =>
-              entailmentGraph.addSynonym(propbankSense, pbSynonym);
+        wnToVn.get(synonym) match {
+          case Some(vnSynonyms) => {
+            vnSynonyms.foreach({ vnSynonym =>
+              entailmentGraph.addSynonym(verbNetSense, vnSynonym);
               traceWriter match {
                 case Some(writer) => {
                   val traceCol = List(
-                    propbankSense,
+                    verbNetSense,
                     wordNetUtils.wordToString(word, tagCount=true),
                     wordNetUtils.wordToString(synonym, tagCount=true),
-                    pbSynonym
+                    vnSynonym
                   ).mkString(" = ")
                   val row = List(
-                    propbankSense,
-                    pbSynonym,
-                    propbankSense.getGloss,
-                    pbSynonym.getGloss,
+                    verbNetSense,
+                    vnSynonym,
+                    verbNetSense.getGloss,
+                    vnSynonym.getGloss,
                     traceCol
                   ).mkString("\t")
                   writer.write(row)
@@ -115,27 +135,27 @@ class EntailmentGraphGenerator(pbToWnPath: String, wnToPbPath: String, glossPath
         }
       })
       hyponyms.foreach({ case (word, hyponym) =>
-        wnToPb.get(hyponym) match {
-          case Some(pbHyponyms) => {
-            pbHyponyms.foreach({ pbHyponym =>
-              entailmentGraph.addEntailment(pbHyponym, propbankSense);
+        wnToVn.get(hyponym) match {
+          case Some(vnHyponyms) => {
+            vnHyponyms.foreach({ vnHyponym =>
+              entailmentGraph.addEntailment(vnHyponym, verbNetSense);
               traceWriter match {
                 case Some(writer) => {
                   val traceCol = List(
                     List(
-                      pbHyponym,
+                      vnHyponym,
                       wordNetUtils.wordToString(hyponym, tagCount=true)
                     ).mkString(" = "),
                     List(
                       wordNetUtils.wordToString(word, tagCount=true),
-                      propbankSense
+                      verbNetSense
                     ).mkString(" = ")
                   ).mkString(" => ")
                   val row = List(
-                    pbHyponym,
-                    propbankSense,
-                    pbHyponym.getGloss,
-                    propbankSense.getGloss,
+                    vnHyponym,
+                    verbNetSense,
+                    vnHyponym.getGloss,
+                    verbNetSense.getGloss,
                     traceCol
                   ).mkString("\t")
                   writer.write(row)
@@ -156,10 +176,10 @@ class EntailmentGraphGenerator(pbToWnPath: String, wnToPbPath: String, glossPath
 object EntailmentGraphGenerator {
   def writeGraph(graph: EntailmentGraph, path: String): Unit = {
     val writer = new BufferedWriter(new FileWriter(path))
-    def writeEdges(edges: Map[PropbankSense, Set[PropbankSense]], edgeName: String): Unit = {
-      edges.foreach({ case(pb1, pb2s) =>
-        pb2s.foreach({ pb2 =>
-          val row = List(pb1, pb2, edgeName).mkString("\t")
+    def writeEdges(edges: Map[VerbNetSense, Set[VerbNetSense]], edgeName: String): Unit = {
+      edges.foreach({ case(vn1, vn2s) =>
+        vn2s.foreach({ vn2 =>
+          val row = List(vn1, vn2, edgeName).mkString("\t")
           writer.write(row)
           writer.newLine()
         })
@@ -182,19 +202,23 @@ object EntailmentGraphGenerator {
     if (!parser.parse(args)) return
     
     val wordNetPath = List(inputDir, "WordNet-3.0", "dict").mkString(File.separator)
-    val pbToWnPath = List(inputDir, "pb-wn.tsv").mkString(File.separator)
-    val wnToPbPath = List(inputDir, "wn-pb.tsv").mkString(File.separator)
-    val glossPath = List(inputDir, "glosses.tsv").mkString(File.separator)
+    val vnToWnPath = List(inputDir, "vn-wn.tsv").mkString(File.separator)
+    val wnToVnPath = List(inputDir, "wn-vn.tsv").mkString(File.separator)
     
-    val traceWriterPath = List(outputDir, "pb_trace.txt").mkString(File.separator)
-    val graphWriterPath = List(outputDir, "pb_to_pb.txt").mkString(File.separator)
+    val traceWriterPath = List(outputDir, "vn_trace.txt").mkString(File.separator)
+    val graphWriterPath = List(outputDir, "vn_to_vn.txt").mkString(File.separator)
+    val wnToVnOutputPath = List(outputDir, "wn_to_vn.txt").mkString(File.separator)
     val traceWriter = new BufferedWriter(new FileWriter(traceWriterPath))
+    val wnToVnWriter = new BufferedWriter(new FileWriter(wnToVnOutputPath))
     
-    val generator = new EntailmentGraphGenerator(pbToWnPath, wnToPbPath, glossPath, wordNetPath)
+    val generator = new EntailmentGraphGenerator(vnToWnPath, wnToVnPath, wordNetPath)
     val graph = generator.generateEntailmentGraph(traceWriter=Some(traceWriter))
+    generator.writeWnToVn(wnToVnWriter)
     
     traceWriter.flush()
     traceWriter.close()
+    wnToVnWriter.flush()
+    wnToVnWriter.close()
     writeGraph(graph, graphWriterPath)
   }
 }

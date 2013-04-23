@@ -27,7 +27,7 @@ class WordNetUtils(wordNetPath: String) {
       val wordId = wordIds.get(senseNumber-1)
       wordNet.getWord(wordId)
     } catch {
-      case e: Exception => println(word); null
+      case e: Exception => println("Error: couldn't get word sense for " + word); null
     }
   }
   
@@ -47,6 +47,10 @@ class WordNetUtils(wordNetPath: String) {
   
   def getSenseNumber(word: IWord): Integer = {
     wordNet.getSenseEntry(word.getSenseKey()).getSenseNumber()
+  }
+  
+  def getGloss(word: IWord): String = {
+    word.getSynset().getGloss()
   }
   
   def wordToString(word: IWord, senseNumber: Boolean = true, tagCount: Boolean = false): String = {

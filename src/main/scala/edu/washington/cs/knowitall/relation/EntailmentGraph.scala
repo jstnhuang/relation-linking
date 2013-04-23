@@ -1,7 +1,8 @@
 package edu.washington.cs.knowitall.relation
 
-import edu.washington.cs.knowitall.model.PropbankSense
 import scala.collection.mutable.Map
+
+import edu.washington.cs.knowitall.model.VerbNetSense
 
 object EntailmentGraphEdgeType extends Enumeration {
   type EdgeType = Value
@@ -13,45 +14,45 @@ import EntailmentGraphEdgeType._
  * A directed graph where Propbank senses go to synonymous or entailed Propbank senses.
  */
 class EntailmentGraph {
-  var synonymEdges = Map[PropbankSense, Set[PropbankSense]]()
-  var hyponymEdges = Map[PropbankSense, Set[PropbankSense]]()
-  var nodes = Set[PropbankSense]()
+  var synonymEdges = Map[VerbNetSense, Set[VerbNetSense]]()
+  var hyponymEdges = Map[VerbNetSense, Set[VerbNetSense]]()
+  var nodes = Set[VerbNetSense]()
   
   /**
    * Add an edge to the graph such that p1 and p2 are synonymous (bidirectional entailment).
    */
-  def addSynonym(p1: PropbankSense, p2: PropbankSense) = {
-    addEdge(p1, p2, Synonym)
-    addEdge(p2, p1, Synonym)
+  def addSynonym(v1: VerbNetSense, v2: VerbNetSense) = {
+    addEdge(v1, v2, Synonym)
+    addEdge(v2, v1, Synonym)
   }
   
   /**
    * Add an edge to the graph such that p1 entails p2, i.e., p2 is a hyponym/troponym of p1.
    */
-  def addEntailment(p1: PropbankSense, p2: PropbankSense) = {
-    addEdge(p1, p2, Hyponym)
+  def addEntailment(v1: VerbNetSense, v2: VerbNetSense) = {
+    addEdge(v1, v2, Hyponym)
   }
   
   /**
    * Add an edge saying that p1 entails p2.
    */
-  private def addEdge(p1: PropbankSense, p2: PropbankSense, edgeType: EdgeType): Unit = {
+  private def addEdge(v1: VerbNetSense, v2: VerbNetSense, edgeType: EdgeType): Unit = {
     edgeType match {
       case Synonym => {
-        synonymEdges.get(p1) match {
-          case Some(senses) => synonymEdges(p1) = senses + p2
-          case None => synonymEdges(p1) = Set(p2)
+        synonymEdges.get(v1) match {
+          case Some(senses) => synonymEdges(v1) = senses + v2
+          case None => synonymEdges(v1) = Set(v2)
         }
       }
       case Hyponym => {
-        hyponymEdges.get(p1) match {
-          case Some(senses) => hyponymEdges(p1) = senses + p2
-          case None => hyponymEdges(p1) = Set(p2)
+        hyponymEdges.get(v1) match {
+          case Some(senses) => hyponymEdges(v1) = senses + v2
+          case None => hyponymEdges(v1) = Set(v2)
         }
       }
     }
     
-    nodes = nodes + p1 + p2
+    nodes = nodes + v1 + v2
   }
 }
 
