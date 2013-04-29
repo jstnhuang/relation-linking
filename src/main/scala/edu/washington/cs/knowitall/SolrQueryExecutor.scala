@@ -1,19 +1,19 @@
 package edu.washington.cs.knowitall
 
 import scala.collection.Iterator
-import edu.washington.cs.knowitall.browser.extraction.ExtractionGroup
-import edu.washington.cs.knowitall.browser.extraction.ReVerbExtraction
-import edu.washington.cs.knowitall.browser.extraction.ExtractionArgument
-import edu.washington.cs.knowitall.browser.extraction.ExtractionRelation
+import edu.knowitall.openie.models.ExtractionGroup
+import edu.knowitall.openie.models.ReVerbExtraction
+import edu.knowitall.openie.models.ExtractionArgument
+import edu.knowitall.openie.models.ExtractionRelation
 import org.apache.solr.common.SolrDocument
 import org.apache.solr.client.solrj.impl.HttpSolrServer
-import edu.washington.cs.knowitall.browser.extraction.FreeBaseEntity
+import edu.knowitall.openie.models.FreeBaseEntity
 import edu.knowitall.common.Resource.using
 import scala.collection.JavaConverters._
 import java.io.ByteArrayInputStream
-import edu.washington.cs.knowitall.browser.extraction.FreeBaseType
+import edu.knowitall.openie.models.FreeBaseType
 import java.io.ObjectInputStream
-import edu.washington.cs.knowitall.browser.extraction.Instance
+import edu.knowitall.openie.models.Instance
 import org.apache.solr.client.solrj.SolrQuery
 
 class SolrQueryExecutor (solrUrl: String) extends QueryExecutor {
