@@ -35,15 +35,16 @@ trait QueryExpander {
           arg2.arg.getOrElse("what")
         )
         val arg1End = arg1Tokens.size
-        val arg2End = arg1End + arg2Tokens.size
+        val arg2End = arg1End + relTokens.size
         
         val sentence = arg1Tokens ++ relTokens ++ arg2Tokens
         val taggedTokens = tagger.postagTokens(sentence)
-        (
+        val result = (
           taggedTokens.take(arg1End),
           taggedTokens.slice(arg1End, arg2End),
           taggedTokens.drop(arg2End)
         )
+        result
       }
       case None => {
         (tagger.postag(arg1.arg.getOrElse("")), List(), tagger.postag(arg2.arg.getOrElse("")))

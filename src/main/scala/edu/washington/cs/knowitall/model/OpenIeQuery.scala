@@ -15,15 +15,15 @@ class OpenIeQuery (queryArg1: QueryArg, queryRel: QueryRel, queryArg2: QueryArg)
   def getQueryString(): String = {
     val queryParts = List(
       ("arg1", queryArg1.getArgQueryString()),
-      ("arg1_entity_id", queryArg1.entity),
-      ("arg1_types", queryArg1.types),
+      ("arg1_entity_id", queryArg1.getEntityQueryString()),
+      ("arg1_types", queryArg1.getTypeQueryString()),
       ("rel", queryRel.getRelQueryString()),
       ("srlLink", queryRel.getSrlQueryString()),
       ("wnLink", queryRel.getWnQueryString()),
       ("vnLink", queryRel.getVnQueryString()),
       ("arg2", queryArg2.getArgQueryString()),
-      ("arg2_entity_id", queryArg2.entity),
-      ("arg2_types", queryArg2.types)
+      ("arg2_entity_id", queryArg2.getEntityQueryString()),
+      ("arg2_types", queryArg2.getTypeQueryString())
     )
     queryParts.map({ queryPart =>
       queryPart match {

@@ -24,28 +24,38 @@ object VerbNetQueryExpander extends QueryExpander {
     val verbNetLinker = new VerbNetRelationLinker(Constants.RELATION_BASEPATH)
     val verbNetSenses = verbNetLinker.getRelationLinks(relTags)
     
-    // Find all entailed VerbNet senses.
-    val selectStatement = derbyHandler.prepareStatement(
-      "SELECT vn2 FROM vn_to_vn WHERE vn1 IN ("
-      + verbNetSenses.map(_ => "?").mkString(", ") + ")"
-    )
-    var index=1;
-    verbNetSenses.foreach({ verbNetSense =>
-      selectStatement.setString(index, verbNetSense)
-      index += 1
-    })
-    
-    val results = derbyHandler.query(selectStatement)
-    var entailedSenses = Set[String]()
-    while(results.next()) {
-      val entailedSense = results.getString(1)
-      entailedSenses += entailedSense
+    if (verbNetSenses.size == 0) {
+      System.err.println("No entailed VerbNet senses for " + queryRel.rel.getOrElse("(None)"))
+      new OpenIeQuery(
+        QueryArg.fromString(rawQuery.arg1.getOrElse("")),
+        new QueryRel(),
+        QueryArg.fromString(rawQuery.arg2.getOrElse(""))
+      )
+    } else {
+      // Find all entailed VerbNet senses.
+      val queryString = (
+        "SELECT vn2 FROM vn_to_vn WHERE vn1 IN ("
+        + verbNetSenses.toSeq.map(_ => "?").mkString(", ") + ")"
+      )
+      val selectStatement = derbyHandler.prepareStatement(queryString)
+      var index=1;
+      verbNetSenses.foreach({ verbNetSense =>
+        selectStatement.setString(index, verbNetSense)
+        index += 1
+      })
+      
+      val results = derbyHandler.query(selectStatement)
+      var entailedSenses = Set[String]()
+      while(results.next()) {
+        val entailedSense = results.getString(1)
+        entailedSenses += entailedSense
+      }
+      
+      new OpenIeQuery(
+        QueryArg.fromString(rawQuery.arg1.getOrElse("")),
+        new QueryRel(vnLinks=Some(entailedSenses)),
+        QueryArg.fromString(rawQuery.arg2.getOrElse(""))
+      )
     }
-    
-    new OpenIeQuery(
-      QueryArg.fromString(rawQuery.arg1.getOrElse("")),
-      new QueryRel(vnLinks=Some(entailedSenses)),
-      QueryArg.fromString(rawQuery.arg2.getOrElse(""))
-    )
   }
 }

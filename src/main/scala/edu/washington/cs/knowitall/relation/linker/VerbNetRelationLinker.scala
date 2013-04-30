@@ -31,7 +31,7 @@ class VerbNetRelationLinker(basePath: String) extends RelationLinker {
     } else {
       val selectStatement = derbyHandler.prepareStatement(
         "SELECT vn FROM wn_to_vn WHERE wn IN ("
-        + wordNetSenses.map(_ => "?").mkString(", ") + ")"
+        + wordNetSenses.toSeq.map(_ => "?").mkString(", ") + ")"
       )
       var index = 1;
       wordNetSenses.foreach({ wordNetSense =>

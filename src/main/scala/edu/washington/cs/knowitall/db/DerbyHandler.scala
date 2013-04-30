@@ -14,7 +14,7 @@ class DerbyHandler(dbPath: String) {
   var connection: Connection = null;
   try {
     Class.forName(DerbyConstants.DERBY_DRIVER);
-    val connection = DriverManager.getConnection(connectionUrl)
+    connection = DriverManager.getConnection(connectionUrl)
   } catch {
     case e: SQLException => throw new RuntimeException(
       "Could not open Derby DB at " + connectionUrl, e)

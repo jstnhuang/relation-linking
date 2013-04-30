@@ -31,9 +31,19 @@ case class QueryArg(
     }
   }
   
-  def getEntityQueryString(): Option[String] = entity
+  def getEntityQueryString(): Option[String] = {
+    entity match {
+      case Some(ent) => Some("\"%s\"".format(ent).replace(" ", "_"))
+      case None => None
+    }
+  }
   
-  def getTypeQueryString(): Option[String] = types
+  def getTypeQueryString(): Option[String] = {
+    types match {
+      case Some(typs) => Some("\"%s\"".format(typs).replace(" ", "_"))
+      case None => None
+    }
+  }
 }
 
 object QueryArg {  

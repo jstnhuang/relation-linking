@@ -27,7 +27,7 @@ class WordNetUtils(wordNetPath: String) {
       val wordId = wordIds.get(senseNumber-1)
       wordNet.getWord(wordId)
     } catch {
-      case e: Exception => println("Error: couldn't get word sense for " + word); null
+      case e: Exception => System.err.println("Error: couldn't get word sense for " + word); null
     }
   }
   

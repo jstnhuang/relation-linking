@@ -11,25 +11,29 @@ import edu.washington.cs.knowitall.model.OpenIeQuery
 import edu.washington.cs.knowitall.relation.{BaselineQueryExpander, QueryExpander}
 import scopt.OptionParser
 import edu.knowitall.openie.models.ReVerbExtraction
+import edu.washington.cs.knowitall.relation.VerbNetQueryExpander
 
 
 class RelationInferenceExperiment (solrUrl: String, inputDir: String, outputDir: String) {
-  val solrExecutor = new SolrQueryExecutor(solrUrl)
+//  val solrExecutor = new SolrQueryExecutor(solrUrl)
   val BENCHMARK_QUERIES_FILE = "benchmark-queries.tsv"
   val QUERY_STATS_FILE = "query_stats.txt"
   val SENTENCES_FILE_BASE = "sentences"
   type REG = ExtractionGroup[ReVerbExtraction];
     
-  def getTestQueries(): Iterator[BenchmarkQuery] = {
-    Source.fromFile(inputDir + BENCHMARK_QUERIES_FILE).getLines().map({ line =>
-      BenchmarkQuery.fromLine(line)
+  def getTestQueries(): Seq[BenchmarkQuery] = {
+    var testQueries = List[BenchmarkQuery]()
+    Source.fromFile(inputDir + BENCHMARK_QUERIES_FILE).getLines().foreach({ line =>
+      testQueries = BenchmarkQuery.fromLine(line)::testQueries
     })
+    testQueries
   }
   
   def runQuery(query: OpenIeQuery): Set[REG] = {
     val queryText = query.getQueryString()
     println(queryText)
-    solrExecutor.execute(queryText).toSet
+    null
+//    solrExecutor.execute(queryText).toSet
   }
   
 //  def outputStats(writer: BufferedWriter, name: String, query: OpenIeQuery, groups: Set[REG]):
@@ -73,21 +77,22 @@ class RelationInferenceExperiment (solrUrl: String, inputDir: String, outputDir:
   }
   
   def run(): Unit = {
-    val queryExpanders: Seq[QueryExpander] = List(BaselineQueryExpander)
+    val queryExpanders: Seq[QueryExpander] = List(BaselineQueryExpander, VerbNetQueryExpander)
     val benchmarkQueries = getTestQueries()
     
     queryExpanders.foreach({ expander =>
       val systemName = expander.getName()
-      val sentenceWriter = new BufferedWriter(new FileWriter(
-        outputDir + SENTENCES_FILE_BASE + "_" + systemName + ".txt"
-      ))
+      println(systemName)
+//      val sentenceWriter = new BufferedWriter(new FileWriter(
+//        outputDir + SENTENCES_FILE_BASE + "_" + systemName + ".txt"
+//      ))
       benchmarkQueries.foreach({ benchmarkQuery =>
         val query = expander.expandQuery(benchmarkQuery)
         val groups = runQuery(query)
         
-        outputSentences(sentenceWriter, systemName, query, groups)
+//        outputSentences(sentenceWriter, systemName, query, groups)
       })
-      sentenceWriter.close()
+//      sentenceWriter.close()
     })
   }
 }

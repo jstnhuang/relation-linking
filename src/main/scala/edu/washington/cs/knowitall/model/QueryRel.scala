@@ -9,7 +9,7 @@ case class QueryRel(
     vnLinks: Option[Set[String]]=None) {
   def getRelQueryString(): Option[String] = {
     rel match {
-      case Some(str) => Some(PhraseNormalizer.normalize(str))
+      case Some(str) => Some("\"%s\"".format(PhraseNormalizer.normalize(str)))
       case None => None
     }
   }
