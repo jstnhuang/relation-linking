@@ -11,6 +11,7 @@ import edu.washington.cs.knowitall.db.DerbyHandler
 
 object VerbNetQueryExpander extends QueryExpander {
   val derbyHandler = new DerbyHandler(Constants.RELATION_BASEPATH + Constants.VNTABLES)
+  val verbNetLinker = new VerbNetRelationLinker(Constants.RELATION_BASEPATH)
   
   override def getName(): String = "VerbNet"
     
@@ -21,7 +22,6 @@ object VerbNetQueryExpander extends QueryExpander {
     val (arg1Tags, relTags, arg2Tags) = tagQuery(queryArg1, queryRel, queryArg2)
     
     // Find VerbNet senses for this query.
-    val verbNetLinker = new VerbNetRelationLinker(Constants.RELATION_BASEPATH)
     val verbNetSenses = verbNetLinker.getRelationLinks(relTags)
     
     if (verbNetSenses.size == 0) {
