@@ -53,23 +53,36 @@ object ReverbRelationLinker extends ScoobiApp {
             if (extraction.sentenceTokens.size > MAX_SENTENCE_LENGTH) {
               None
             } else {
-              val (srlLink, wnLink, vnLinks) = getLinks(srlLinker, wnLinker, vnLinker, relTokens,
-                Some(sentenceTokens))
-            
-              val key = List(
-                group.arg1.norm,
-                group.arg2.norm,
-                group.arg2.norm,
-                ReVerbExtractionGroup.serializeEntity(group.arg1.entity),
-                ReVerbExtractionGroup.serializeEntity(group.arg2.entity),
-                ReVerbExtractionGroup.serializeTypeList(group.arg1.types),
-                ReVerbExtractionGroup.serializeTypeList(group.arg2.types),
-                srlLink.getOrElse("X"),
-                wnLink.getOrElse("X"),
-                ReVerbExtractionGroup.serializeVnLinks(vnLinks)
-              ).mkString("\t")
-              val value = ReVerbInstanceSerializer.serializeToString(instance)
-              Some(key, value)
+              try {
+                val (srlLink, wnLink, vnLinks) = getLinks(srlLinker, wnLinker, vnLinker, relTokens,
+                  Some(sentenceTokens))
+              
+                val key = List(
+                  group.arg1.norm,
+                  group.arg2.norm,
+                  group.arg2.norm,
+                  ReVerbExtractionGroup.serializeEntity(group.arg1.entity),
+                  ReVerbExtractionGroup.serializeEntity(group.arg2.entity),
+                  ReVerbExtractionGroup.serializeTypeList(group.arg1.types),
+                  ReVerbExtractionGroup.serializeTypeList(group.arg2.types),
+                  srlLink.getOrElse("X"),
+                  wnLink.getOrElse("X"),
+                  ReVerbExtractionGroup.serializeVnLinks(vnLinks)
+                ).mkString("\t")
+                val value = ReVerbInstanceSerializer.serializeToString(instance)
+                Some(key, value)
+              } catch {
+                case e: Error => {
+                  System.err.println("ReverbRelationLinker: error processing %s: %s".format(
+                    extraction.sentenceText, e));
+                  None
+                }
+                case e: Exception => {
+                  System.err.println("ReverbRelationLinker: error processing %s: %s".format(
+                    extraction.sentenceText, e));
+                  None
+                }
+              }
             }
           }
         }
