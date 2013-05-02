@@ -12,10 +12,11 @@ import edu.washington.cs.knowitall.relation.{BaselineQueryExpander, QueryExpande
 import scopt.OptionParser
 import edu.knowitall.openie.models.ReVerbExtraction
 import edu.washington.cs.knowitall.relation.VerbNetQueryExpander
+import edu.washington.cs.knowitall.relation.SrlQueryExpander
 
 
 class RelationInferenceExperiment (solrUrl: String, inputDir: String, outputDir: String) {
-//  val solrExecutor = new SolrQueryExecutor(solrUrl)
+  val solrExecutor = new SolrQueryExecutor(solrUrl)
   val BENCHMARK_QUERIES_FILE = "benchmark-queries.tsv"
   val QUERY_STATS_FILE = "query_stats.txt"
   val SENTENCES_FILE_BASE = "sentences"
@@ -31,6 +32,7 @@ class RelationInferenceExperiment (solrUrl: String, inputDir: String, outputDir:
   
   def runQuery(query: OpenIeQuery): Set[REG] = {
     val queryText = query.getQueryString()
+    // TODO: debug
     println(queryText)
     null
 //    solrExecutor.execute(queryText).toSet
@@ -77,7 +79,7 @@ class RelationInferenceExperiment (solrUrl: String, inputDir: String, outputDir:
   }
   
   def run(): Unit = {
-    val queryExpanders: Seq[QueryExpander] = List(BaselineQueryExpander, VerbNetQueryExpander)
+    val queryExpanders: Seq[QueryExpander] = List(SrlQueryExpander/*BaselineQueryExpander, VerbNetQueryExpander*/)
     val benchmarkQueries = getTestQueries()
     
     queryExpanders.foreach({ expander =>
