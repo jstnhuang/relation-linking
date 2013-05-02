@@ -21,6 +21,23 @@ trait QueryExpander {
   )
   
   /**
+   * Gets a textual phrase for the given arg string. The text comes from either the arg string
+   * itself, the entity, or the type. If none of those are set, then the result is "what".
+   */
+  def getArgText(arg: QueryArg): String = {
+    arg.arg match {
+      case Some(argString) => argString
+      case None => arg.entity match {
+        case Some(entity) => entity.replace("_", " ")
+        case None => arg.types match {
+          case Some(types) => types.replace("_", " ")
+          case None => "what"
+        }
+      }
+    }
+  }
+  
+  /**
    * Attempts to get the part of speech tags for a query. If the relation phrase doesn't exist, then
    * it just tags the arguments as normal. If the relation phrase does exist, then it replaces any
    * missing arguments with the word "what," and tags the resulting phrase.
@@ -29,10 +46,12 @@ trait QueryExpander {
       (Seq[PostaggedToken], Seq[PostaggedToken], Seq[PostaggedToken]) = {
     rel.rel match {
       case Some(relString) => {
+        val arg1Text = getArgText(arg1)
+        val arg2Text = getArgText(arg2)
         val (arg1Tokens, relTokens, arg2Tokens) = tokenizeQuery(
-          arg1.arg.getOrElse("What"),
+          arg1Text,
           relString,
-          arg2.arg.getOrElse("what")
+          arg2Text
         )
         val arg1End = arg1Tokens.size
         val arg2End = arg1End + relTokens.size
