@@ -17,7 +17,11 @@ libraryDependencies ++= Seq(
   "edu.washington.cs.knowitall.nlptools" %% "nlptools-postag-opennlp" % "2.4.1",
   "edu.washington.cs.knowitall.nlptools" %% "nlptools-tokenize-opennlp" % "2.4.1",
   "org.apache.derby" % "derby" % "10.9.1.0",
-  "org.apache.solr" % "solr-solrj" % "4.0.0"
+  "org.apache.solr" % "solr-solrj" % "4.0.0",
+  "ch.qos.logback" % "logback-classic" % "1.0.12",
+  "ch.qos.logback" % "logback-core" % "1.0.12",
+  "commons-logging" % "commons-logging-api" % "1.0.4",
+  "org.slf4j" % "slf4j-api" % "1.7.2"
 )
 
 resolvers ++= Seq(
