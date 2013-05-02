@@ -93,11 +93,25 @@ class SolrQueryExecutor (solrUrl: String) extends QueryExecutor {
 
     val rel = ExtractionRelation(
       norm = solrDocument.getFieldValue("rel").asInstanceOf[String],
-      link = {
-        if (!solrDocument.containsKey("rel_link_id")) {
+      srlLink = {
+        if (!solrDocument.containsKey("srl_link")) {
           None
         } else {
-          Some(solrDocument.getFieldValue("rel_link_id").asInstanceOf[String])
+          Some(solrDocument.getFieldValue("srl_link").asInstanceOf[String])
+        }
+      },
+      wnLink = {
+        if (!solrDocument.containsKey("wn_link")) {
+          None
+        } else {
+          Some(solrDocument.getFieldValue("wn_link").asInstanceOf[String])
+        }
+      },
+      vnLinks = {
+        if (!solrDocument.containsKey("vn_links")) {
+          Set.empty[String]
+        } else {
+          solrDocument.getFieldValue("vn_links").asInstanceOf[java.util.List[String]].asScala.toSet
         }
       }
     )
