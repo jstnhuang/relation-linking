@@ -1,121 +1,101 @@
 package edu.washington.cs.knowitall.relation.experiment
 
-import java.io.ByteArrayInputStream
-import java.io.ObjectInputStream
+import java.io.{BufferedWriter, FileWriter}
 import scala.Array.canBuildFrom
-import scala.collection.JavaConverters.asScalaBufferConverter
-import scala.collection.JavaConverters.asScalaIteratorConverter
+import scala.collection.JavaConverters.{asScalaBufferConverter, asScalaIteratorConverter}
 import scala.io.Source
-import org.apache.solr.client.solrj.SolrQuery
-import org.apache.solr.client.solrj.impl.HttpSolrServer
 import edu.knowitall.common.Resource.using
-import edu.washington.cs.knowitall.model.OpenIeQuery
-import edu.washington.cs.knowitall.browser.extraction.ExtractionArgument
-import edu.washington.cs.knowitall.browser.extraction.ExtractionGroup
-import edu.washington.cs.knowitall.browser.extraction.ExtractionRelation
-import edu.washington.cs.knowitall.browser.extraction.FreeBaseEntity
-import edu.washington.cs.knowitall.browser.extraction.FreeBaseType
-import edu.washington.cs.knowitall.browser.extraction.Instance
-import edu.washington.cs.knowitall.browser.extraction.ReVerbExtraction
-import scopt.OptionParser
+import edu.knowitall.openie.models.ExtractionGroup
 import edu.washington.cs.knowitall.SolrQueryExecutor
-import java.io.FileWriter
-import java.io.BufferedWriter
-import java.io.Writer
+import edu.washington.cs.knowitall.model.OpenIeQuery
+import edu.washington.cs.knowitall.relation.{BaselineQueryExpander, QueryExpander}
+import scopt.OptionParser
+import edu.knowitall.openie.models.ReVerbExtraction
+import edu.washington.cs.knowitall.relation.VerbNetQueryExpander
+import edu.washington.cs.knowitall.relation.SrlQueryExpander
+
 
 class RelationInferenceExperiment (solrUrl: String, inputDir: String, outputDir: String) {
   val solrExecutor = new SolrQueryExecutor(solrUrl)
   val BENCHMARK_QUERIES_FILE = "benchmark-queries.tsv"
   val QUERY_STATS_FILE = "query_stats.txt"
-  val SENTENCES_FILE = "sentences.txt"
+  val SENTENCES_FILE_BASE = "sentences"
+  type REG = ExtractionGroup[ReVerbExtraction];
+    
+  def getTestQueries(): Seq[BenchmarkQuery] = {
+    var testQueries = List[BenchmarkQuery]()
+    Source.fromFile(inputDir + BENCHMARK_QUERIES_FILE).getLines().foreach({ line =>
+      testQueries = BenchmarkQuery.fromLine(line)::testQueries
+    })
+    testQueries
+  }
+  
+  def runQuery(query: OpenIeQuery): Set[REG] = {
+    val queryText = query.getQueryString()
+    // TODO: debug
+    println(queryText)
+    null
+//    solrExecutor.execute(queryText).toSet
+  }
+  
+//  def outputStats(writer: BufferedWriter, name: String, query: OpenIeQuery, groups: Set[REG]):
+//      Unit = {
+//    writer.write(query.getQueryString(false))
+//    writer.newLine()
+//    writer.write(query.getQueryString(true))
+//    writer.newLine()
+//    
+//    writer.write("Without linking: %d groups, %d sentences.".format(
+//      groupsWithoutRlinking.size,
+//      groupsWithoutRlinking.foldLeft(0)((sum, group) => sum + group.instances.size)
+//    ))
+//    writer.newLine()
+//    writer.write("   With linking: %d groups, %d sentences.".format(
+//      groupsWithRlinking.size,
+//      groupsWithRlinking.foldLeft(0)((sum, group) => sum + group.instances.size)
+//    ))
+//    writer.newLine()
+//    writer.newLine()
+//  }
   
   /**
-   * Gets 
+   * Output lines of the form: query, result tuple, result sentence, tag
    */
-  def getTestQueries(): Iterator[OpenIeQuery] = {
-    Source.fromFile(inputDir + BENCHMARK_QUERIES_FILE).getLines().map({ line =>
-      val columns = line.split("\t").map(_.trim())
-      val arg1String = if(columns.length > 0) { columns(0) } else { "" }
-      val relString = if(columns.length > 1) { columns(1) } else { "" }
-      val arg2String = if(columns.length > 2) { columns(2) } else { "" }
-      OpenIeQuery.fromStrings(arg1String, relString, arg2String)
-    })
-  }
-  
-  def runQuery(query: OpenIeQuery, rlinking: Boolean):
-      Set[ExtractionGroup[ReVerbExtraction]] = {
-    val queryText = query.getQueryString(rlinking)
-    solrExecutor.execute(queryText).toSet
-  }
-  
-  def outputStats(query: OpenIeQuery, groupsWithRlinking: Set[ExtractionGroup[ReVerbExtraction]],
-      groupsWithoutRlinking: Set[ExtractionGroup[ReVerbExtraction]], writer: BufferedWriter):
+  def outputSentences(writer: BufferedWriter, name: String, query: OpenIeQuery, groups: Set[REG]):
       Unit = {
-    writer.write(query.getQueryString(false))
-    writer.newLine()
-    writer.write(query.getQueryString(true))
-    writer.newLine()
-    
-    writer.write("Without linking: %d groups, %d sentences.".format(
-      groupsWithoutRlinking.size,
-      groupsWithoutRlinking.foldLeft(0)((sum, group) => sum + group.instances.size)
-    ))
-    writer.newLine()
-    writer.write("   With linking: %d groups, %d sentences.".format(
-      groupsWithRlinking.size,
-      groupsWithRlinking.foldLeft(0)((sum, group) => sum + group.instances.size)
-    ))
-    writer.newLine()
-    writer.newLine()
-  }
-  
-  def outputSentences(query: OpenIeQuery, groupsWithRlinking: Set[ExtractionGroup[ReVerbExtraction]],
-      groupsWithoutRlinking: Set[ExtractionGroup[ReVerbExtraction]], writer: BufferedWriter): Unit = {
-    writer.write(query.getQueryString(false))
-    writer.newLine()
-    writer.write("  Unique groups without linking:")
-    writer.newLine()
-    (groupsWithoutRlinking -- groupsWithRlinking).foreach({ group =>
-      writer.write("    (%s, %s, %s)".format(
-        group.arg1.norm, group.rel.norm, group.arg2.norm
+    groups.foreach({ group =>
+      val queryString = query.getQueryString()
+      val tag = ""
+      writer.write("%s\t%s, %s, %s\t%s".format(
+        queryString, group.arg1.norm, group.rel.norm, group.arg2.norm, tag
       ))
       writer.newLine()
-      group.instances.take(5).foreach({instance =>
-        val sentenceText = instance.extraction.sentenceText
-        writer.write("      " + sentenceText)
-        writer.newLine()
-      })
+//      group.instances.take(5).foreach({instance =>
+//        val sentenceText = instance.extraction.sentenceText
+//        writer.write("      " + sentenceText)
+//        writer.newLine()
+//      })
     })
-    
-    writer.write("  Unique groups with linking: ")
-    writer.newLine()
-    (groupsWithRlinking -- groupsWithoutRlinking).foreach({ group =>
-      writer.write("    (%s, %s, %s)".format(
-        group.arg1.norm, group.rel.norm, group.arg2.norm
-      ))
-      writer.newLine()
-      group.instances.take(2).foreach({instance =>
-        writer.write("      " + instance.extraction.sentenceText)
-        writer.newLine()
-      })
-    })
-    writer.newLine()
   }
   
   def run(): Unit = {
-    val queries = getTestQueries()
-    val statsWriter = new BufferedWriter(new FileWriter(outputDir + QUERY_STATS_FILE))
-    val sentenceWriter = new BufferedWriter(new FileWriter(outputDir + SENTENCES_FILE))
+    val queryExpanders: Seq[QueryExpander] = List(SrlQueryExpander/*BaselineQueryExpander, VerbNetQueryExpander*/)
+    val benchmarkQueries = getTestQueries()
     
-    queries.foreach({ query =>
-      val groupsWithRlinking = runQuery(query, true)
-      val groupsWithoutRlinking = runQuery(query, false)
-      
-      outputStats(query, groupsWithRlinking, groupsWithoutRlinking, statsWriter)
-      outputSentences(query, groupsWithRlinking, groupsWithoutRlinking, sentenceWriter)
+    queryExpanders.foreach({ expander =>
+      val systemName = expander.getName()
+      println(systemName)
+//      val sentenceWriter = new BufferedWriter(new FileWriter(
+//        outputDir + SENTENCES_FILE_BASE + "_" + systemName + ".txt"
+//      ))
+      benchmarkQueries.foreach({ benchmarkQuery =>
+        val query = expander.expandQuery(benchmarkQuery)
+        val groups = runQuery(query)
+        
+//        outputSentences(sentenceWriter, systemName, query, groups)
+      })
+//      sentenceWriter.close()
     })
-    statsWriter.close()
-    sentenceWriter.close()
   }
 }
 

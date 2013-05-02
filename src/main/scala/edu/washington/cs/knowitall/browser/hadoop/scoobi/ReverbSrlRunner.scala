@@ -11,12 +11,12 @@ import com.nicta.scoobi.Scoobi.Tuple2Fmt
 import com.nicta.scoobi.Scoobi.persist
 import edu.knowitall.tool.parse.ClearParser
 import edu.knowitall.tool.srl.ClearSrl
-import edu.washington.cs.knowitall.browser.extraction.ExtractionGroup
-import edu.washington.cs.knowitall.browser.extraction.ReVerbExtractionGroup
+import edu.knowitall.openie.models.ExtractionGroup
+import edu.knowitall.openie.models.ReVerbExtractionGroup
 import scopt.OptionParser
-import edu.washington.cs.knowitall.browser.extraction.Instance
-import edu.washington.cs.knowitall.browser.extraction.ReVerbExtraction
-import edu.washington.cs.knowitall.browser.extraction.ReVerbInstanceSerializer
+import edu.knowitall.openie.models.Instance
+import edu.knowitall.openie.models.ReVerbExtraction
+import edu.knowitall.openie.models.ReVerbInstanceSerializer
 import edu.knowitall.collection.immutable.Interval
 
 object ReverbSrlRunnerStaticVars {

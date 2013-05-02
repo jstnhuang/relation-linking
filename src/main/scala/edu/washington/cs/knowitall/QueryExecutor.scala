@@ -1,7 +1,7 @@
 package edu.washington.cs.knowitall
 
-import edu.washington.cs.knowitall.browser.extraction.ExtractionGroup
-import edu.washington.cs.knowitall.browser.extraction.ReVerbExtraction
+import edu.knowitall.openie.models.ExtractionGroup
+import edu.knowitall.openie.models.ReVerbExtraction
 
 trait QueryExecutor {
   def execute(queryString: String): Iterator[ExtractionGroup[ReVerbExtraction]]

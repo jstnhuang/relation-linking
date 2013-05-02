@@ -1,19 +1,19 @@
 package edu.washington.cs.knowitall
 
 import scala.collection.Iterator
-import edu.washington.cs.knowitall.browser.extraction.ExtractionGroup
-import edu.washington.cs.knowitall.browser.extraction.ReVerbExtraction
-import edu.washington.cs.knowitall.browser.extraction.ExtractionArgument
-import edu.washington.cs.knowitall.browser.extraction.ExtractionRelation
+import edu.knowitall.openie.models.ExtractionGroup
+import edu.knowitall.openie.models.ReVerbExtraction
+import edu.knowitall.openie.models.ExtractionArgument
+import edu.knowitall.openie.models.ExtractionRelation
 import org.apache.solr.common.SolrDocument
 import org.apache.solr.client.solrj.impl.HttpSolrServer
-import edu.washington.cs.knowitall.browser.extraction.FreeBaseEntity
+import edu.knowitall.openie.models.FreeBaseEntity
 import edu.knowitall.common.Resource.using
 import scala.collection.JavaConverters._
 import java.io.ByteArrayInputStream
-import edu.washington.cs.knowitall.browser.extraction.FreeBaseType
+import edu.knowitall.openie.models.FreeBaseType
 import java.io.ObjectInputStream
-import edu.washington.cs.knowitall.browser.extraction.Instance
+import edu.knowitall.openie.models.Instance
 import org.apache.solr.client.solrj.SolrQuery
 
 class SolrQueryExecutor (solrUrl: String) extends QueryExecutor {
@@ -93,11 +93,25 @@ class SolrQueryExecutor (solrUrl: String) extends QueryExecutor {
 
     val rel = ExtractionRelation(
       norm = solrDocument.getFieldValue("rel").asInstanceOf[String],
-      link = {
-        if (!solrDocument.containsKey("rel_link_id")) {
+      srlLink = {
+        if (!solrDocument.containsKey("srl_link")) {
           None
         } else {
-          Some(solrDocument.getFieldValue("rel_link_id").asInstanceOf[String])
+          Some(solrDocument.getFieldValue("srl_link").asInstanceOf[String])
+        }
+      },
+      wnLink = {
+        if (!solrDocument.containsKey("wn_link")) {
+          None
+        } else {
+          Some(solrDocument.getFieldValue("wn_link").asInstanceOf[String])
+        }
+      },
+      vnLinks = {
+        if (!solrDocument.containsKey("vn_links")) {
+          Set.empty[String]
+        } else {
+          solrDocument.getFieldValue("vn_links").asInstanceOf[java.util.List[String]].asScala.toSet
         }
       }
     )
