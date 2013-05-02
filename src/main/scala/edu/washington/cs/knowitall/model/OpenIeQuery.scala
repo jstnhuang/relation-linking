@@ -18,9 +18,9 @@ class OpenIeQuery (queryArg1: QueryArg, queryRel: QueryRel, queryArg2: QueryArg)
       ("arg1_entity_id", queryArg1.getEntityQueryString()),
       ("arg1_types", queryArg1.getTypeQueryString()),
       ("rel", queryRel.getRelQueryString()),
-      ("srlLink", queryRel.getSrlQueryString()),
-      ("wnLink", queryRel.getWnQueryString()),
-      ("vnLink", queryRel.getVnQueryString()),
+      ("srl_link", queryRel.getSrlQueryString()),
+      ("wn_link", queryRel.getWnQueryString()),
+      ("vn_link", queryRel.getVnQueryString()),
       ("arg2", queryArg2.getArgQueryString()),
       ("arg2_entity_id", queryArg2.getEntityQueryString()),
       ("arg2_types", queryArg2.getTypeQueryString())
