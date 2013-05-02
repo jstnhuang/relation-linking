@@ -22,11 +22,8 @@ object SrlRelationLinker extends RelationLinker {
       case None => headPhrase
     }
     val text = sentence.map(_.string).mkString(" ")
-    println(text)
     val graph = clearParser.dependencyGraph(text)
-    println(graph)
     val frames = clearSrl(graph)
-    println(frames)
     val frameIndex = frames.lastIndexWhere({ frame =>
       sentence.head.offsets.superset(frame.relation.node.tokenInterval)
     })
