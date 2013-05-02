@@ -1,6 +1,5 @@
 package edu.washington.cs.knowitall.model
 
-import edu.washington.cs.knowitall.relation.HtmlGroupingRelationLinker
 import scala.collection.JavaConverters._
 import edu.knowitall.tool.tokenize.OpenNlpTokenizer
 import edu.knowitall.tool.stem.MorphaStemmer
