@@ -130,7 +130,7 @@ object ReverbRelationLinker extends ScoobiApp {
     }
     
     if (parser.parse(args)) {
-      val derbyHandler = new DerbyHandler(basePath + Constants.VNTABLES);
+      val derbyHandler = new DerbyHandler(Constants.DERBY_SERVER + basePath + Constants.VNTABLES);
       val inputGroups: DList[String] = TextInput.fromTextFile(inputPath)
 //      val srlLinker = SrlRelationLinker
       val srlLinker = null
