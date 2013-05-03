@@ -15,7 +15,6 @@ class DerbyHandler(dbPath: String) {
   try {
     Class.forName(DerbyConstants.DERBY_DRIVER).newInstance();
     connection = DriverManager.getConnection(connectionUrl)
-    println("success! " + connection)
   } catch {
     case e: SQLException => throw new RuntimeException(
       "Could not open Derby DB at " + connectionUrl, e)
