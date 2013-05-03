@@ -15,7 +15,8 @@ import edu.washington.cs.knowitall.db.DerbyHandler
  * Links verb phrases to WordNet senses. Currently just links to the most frequent WordNet sense of
  * a phrase/word.
  */
-class WordNetRelationLinker(derbyHandler: DerbyHandler, wordNetPath: String) extends RelationLinker {
+class WordNetRelationLinker(derbyHandler: DerbyHandler, wordNetPath: String)
+    extends RelationLinker {
   val wordNetUtils = new WordNetUtils(wordNetPath)
   
   /**

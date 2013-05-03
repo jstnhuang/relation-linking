@@ -13,7 +13,8 @@ import edu.knowitall.tool.postag.PostaggedToken
  * you must have the Derby tables in basePath (the db must be named the same as Constants.VNTABLES).
  * You also need to have WordNet in basePath.
  */
-class VerbNetRelationLinker(derbyHandler: DerbyHandler, wnPath: String) extends RelationLinker {
+class VerbNetRelationLinker(derbyHandler: DerbyHandler, wordNetPath: String)
+    extends RelationLinker {
   /**
    * Gets the VerbNet senses associated with the given phrase. It uses the WordNet linker to link
    * the phrase to a WordNet sense. Then, it does a lookup of that WordNet sense in the WordNet to
@@ -21,7 +22,7 @@ class VerbNetRelationLinker(derbyHandler: DerbyHandler, wnPath: String) extends 
    */
   def getRelationLinks(phrase: Seq[PostaggedToken], context: Option[Seq[PostaggedToken]] = None):
       Set[String] = {
-    val wordNetLinker = new WordNetRelationLinker(derbyHandler, wnPath + Constants.WORDNET_DICT)
+    val wordNetLinker = new WordNetRelationLinker(derbyHandler, wordNetPath)
     val wordNetSenses = wordNetLinker.getRelationLinks(phrase)
     var relationLinks = Set[String]()
     if (wordNetSenses.size == 0) {
