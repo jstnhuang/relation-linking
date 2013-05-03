@@ -10,6 +10,7 @@ import edu.washington.cs.knowitall.WordNetUtils
 import edu.washington.cs.knowitall.relation.RelationPhraseFinder
 import edu.washington.cs.knowitall.relation.PhraseNormalizer
 import edu.washington.cs.knowitall.db.DerbyHandler
+import edu.knowitall.collection.immutable.Interval
 
 /**
  * Links verb phrases to WordNet senses. Currently just links to the most frequent WordNet sense of
@@ -24,8 +25,9 @@ class WordNetRelationLinker(wordNetPath: String)
    * off the last word and try again. Returns the empty set if no WordNet senses found at all. If
    * there is a WordNet sense, it will return the longest one.
    */
-  def getRelationLinks(phrase: Seq[PostaggedToken], context: Option[Seq[PostaggedToken]] = None):
-      Set[String] = {
+  def getRelationLinks(
+      phrase: Seq[PostaggedToken],
+      context: Option[(Seq[PostaggedToken], Interval)] = None): Set[String] = {
     val headPhrase = RelationPhraseFinder.getHeadPhrase(phrase);
     var words = headPhrase.map(_.string).map(word => PhraseNormalizer.normalize(word))
     var wordNetSenses = Set.empty[String]
