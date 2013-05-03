@@ -56,7 +56,7 @@ object ReverbRelationLinker extends ScoobiApp {
           group.instances.flatMap { instance =>
             val extraction = instance.extraction
             val relTokens = extraction.relTokens
-            relTokens.foreach(println(_))
+            println(extraction.relInterval)
             val sentenceTokens = extraction.sentenceTokens
             
             if (extraction.sentenceTokens.size > 80) {
