@@ -43,7 +43,8 @@ object ReverbRelationLinker extends ScoobiApp {
   def linkRelations(srlLinker: RelationLinker, wnLinker: RelationLinker, vnLinker: RelationLinker,
       inputGroups: DList[String]): DList[String] = {
     inputGroups.flatMap({ line =>
-      ReVerbExtractionGroup.deserializeFromString(line) match {
+      val cleanLine = line.filterNot({c => c==0})
+      ReVerbExtractionGroup.deserializeFromString(cleanLine) match {
         case Some(group) => {
           group.instances.flatMap { instance =>
             val extraction = instance.extraction
@@ -128,11 +129,12 @@ object ReverbRelationLinker extends ScoobiApp {
     
     if (parser.parse(args)) {
       val inputGroups: DList[String] = TextInput.fromTextFile(inputPath)
-      val srlLinker = SrlRelationLinker
+//      val srlLinker = SrlRelationLinker
+      val srlLinker = null
       val wnLinker = new WordNetRelationLinker(basePath)
       val vnLinker = new VerbNetRelationLinker(basePath)
       val outputGroups: DList[String] = linkRelations(srlLinker, wnLinker, vnLinker, inputGroups)
-      persist(TextOutput.toTextFile(outputGroups, outputPath));
+//      persist(TextOutput.toTextFile(outputGroups, outputPath));
     }
   }
 }
