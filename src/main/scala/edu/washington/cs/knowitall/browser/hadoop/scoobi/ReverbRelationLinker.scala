@@ -17,7 +17,7 @@ import edu.washington.cs.knowitall.relation.Constants
 
 object ReverbRelationLinkerStaticVars {
   val derbyHandler = new DerbyHandler(Constants.DERBY_SERVER + Constants.RELATION_BASEPATH + Constants.VNTABLES);
-  val srlLinker = SrlRelationLinker
+//  val srlLinker = SrlRelationLinker
   val wnLinker = new WordNetRelationLinker(Constants.RELATION_BASEPATH + Constants.WORDNET_DICT)
   val vnLinker = new VerbNetRelationLinker(derbyHandler, Constants.RELATION_BASEPATH + Constants.WORDNET_DICT)
 }
@@ -30,7 +30,8 @@ object ReverbRelationLinker extends ScoobiApp {
   def getLinks(phrase: Seq[PostaggedToken], context: Option[Seq[PostaggedToken]]):
       (Option[String], Option[String], Set[String]) = {
     import ReverbRelationLinkerStaticVars._
-    val srlLinks = srlLinker.getRelationLinks(phrase, context)
+//    val srlLinks = srlLinker.getRelationLinks(phrase, context)
+    val srlLinks = Set.empty[String]
     val wnLinks = wnLinker.getRelationLinks(phrase, context)
     val vnLinks = vnLinker.getRelationLinks(phrase, context)
     
@@ -55,6 +56,7 @@ object ReverbRelationLinker extends ScoobiApp {
           group.instances.flatMap { instance =>
             val extraction = instance.extraction
             val relTokens = extraction.relTokens
+            relTokens.foreach(println(_))
             val sentenceTokens = extraction.sentenceTokens
             
             if (extraction.sentenceTokens.size > 80) {
