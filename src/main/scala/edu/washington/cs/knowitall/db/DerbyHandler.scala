@@ -13,7 +13,7 @@ class DerbyHandler(dbPath: String) {
   val connectionUrl = "jdbc:derby:" + dbPath;
   var connection: Connection = null;
   try {
-    Class.forName(DerbyConstants.DERBY_DRIVER);
+    Class.forName(DerbyConstants.DERBY_DRIVER).newInstance();
     connection = DriverManager.getConnection(connectionUrl)
   } catch {
     case e: SQLException => throw new RuntimeException(
