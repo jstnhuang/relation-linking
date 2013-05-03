@@ -1,19 +1,14 @@
 package edu.washington.cs.knowitall.relation.experiment
 
-import java.io.{BufferedWriter, FileWriter}
-import scala.Array.canBuildFrom
-import scala.collection.JavaConverters.{asScalaBufferConverter, asScalaIteratorConverter}
+import java.io.BufferedWriter
+
 import scala.io.Source
-import edu.knowitall.common.Resource.using
-import edu.knowitall.openie.models.ExtractionGroup
+
+import edu.knowitall.openie.models.{ExtractionGroup, ReVerbExtraction}
 import edu.washington.cs.knowitall.SolrQueryExecutor
 import edu.washington.cs.knowitall.model.OpenIeQuery
-import edu.washington.cs.knowitall.relation.{BaselineQueryExpander, QueryExpander}
+import edu.washington.cs.knowitall.relation.expander.{BaselineQueryExpander, QueryExpander, SrlQueryExpander, VerbNetQueryExpander}
 import scopt.OptionParser
-import edu.knowitall.openie.models.ReVerbExtraction
-import edu.washington.cs.knowitall.relation.VerbNetQueryExpander
-import edu.washington.cs.knowitall.relation.SrlQueryExpander
-
 
 class RelationInferenceExperiment (solrUrl: String, inputDir: String, outputDir: String) {
   val solrExecutor = new SolrQueryExecutor(solrUrl)
@@ -32,7 +27,6 @@ class RelationInferenceExperiment (solrUrl: String, inputDir: String, outputDir:
   
   def runQuery(query: OpenIeQuery): Set[REG] = {
     val queryText = query.getQueryString()
-    // TODO: debug
     println(queryText)
     null
 //    solrExecutor.execute(queryText).toSet
@@ -79,7 +73,7 @@ class RelationInferenceExperiment (solrUrl: String, inputDir: String, outputDir:
   }
   
   def run(): Unit = {
-    val queryExpanders: Seq[QueryExpander] = List(SrlQueryExpander/*BaselineQueryExpander, VerbNetQueryExpander*/)
+    val queryExpanders: Seq[QueryExpander] = List(BaselineQueryExpander, SrlQueryExpander, VerbNetQueryExpander)
     val benchmarkQueries = getTestQueries()
     
     queryExpanders.foreach({ expander =>

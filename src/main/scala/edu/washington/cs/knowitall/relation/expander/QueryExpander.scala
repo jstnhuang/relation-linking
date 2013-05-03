@@ -1,4 +1,4 @@
-package edu.washington.cs.knowitall.relation
+package edu.washington.cs.knowitall.relation.expander
 
 import edu.washington.cs.knowitall.model.{OpenIeQuery, QueryArg, QueryRel}
 import edu.washington.cs.knowitall.relation.experiment.BenchmarkQuery

@@ -1,4 +1,4 @@
-package edu.washington.cs.knowitall.relation
+package edu.washington.cs.knowitall.relation.expander
 
 import edu.washington.cs.knowitall.relation.experiment.BenchmarkQuery
 import edu.washington.cs.knowitall.model.OpenIeQuery
@@ -8,6 +8,7 @@ import edu.washington.cs.knowitall.model.QueryArg
 import scala.collection.JavaConverters._
 import edu.washington.cs.knowitall.relation.linker.VerbNetRelationLinker
 import edu.washington.cs.knowitall.db.DerbyHandler
+import edu.washington.cs.knowitall.relation.Constants
 
 object VerbNetQueryExpander extends QueryExpander {
   val derbyHandler = new DerbyHandler(Constants.RELATION_BASEPATH + Constants.VNTABLES)
