@@ -12,6 +12,8 @@ import edu.washington.cs.knowitall.relation.linker.VerbNetRelationLinker
 import edu.washington.cs.knowitall.relation.linker.WordNetRelationLinker
 import edu.knowitall.openie.models.ReVerbInstanceSerializer
 import edu.knowitall.tool.postag.PostaggedToken
+import edu.washington.cs.knowitall.db.DerbyHandler
+import edu.washington.cs.knowitall.relation.Constants
 
 /**
  * Hadoop job that links a Reverb extraction group to its SRL sense, WordNet sense, and VerbNet
@@ -128,11 +130,12 @@ object ReverbRelationLinker extends ScoobiApp {
     }
     
     if (parser.parse(args)) {
+      val derbyHandler = new DerbyHandler(basePath + Constants.VNTABLES);
       val inputGroups: DList[String] = TextInput.fromTextFile(inputPath)
 //      val srlLinker = SrlRelationLinker
       val srlLinker = null
-      val wnLinker = new WordNetRelationLinker(basePath)
-      val vnLinker = new VerbNetRelationLinker(basePath)
+      val wnLinker = new WordNetRelationLinker(derbyHandler, basePath + Constants.WORDNET_DICT)
+      val vnLinker = new VerbNetRelationLinker(derbyHandler, basePath)
       val outputGroups: DList[String] = linkRelations(srlLinker, wnLinker, vnLinker, inputGroups)
 //      persist(TextOutput.toTextFile(outputGroups, outputPath));
     }
