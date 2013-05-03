@@ -21,12 +21,13 @@ object SrlRelationLinker extends RelationLinker {
       case Some(sent) => sent
       case None => headPhrase
     }
+    println(headPhrase)
     println(headPhrase.head.interval + " to " + headPhrase.last.interval)
     val text = sentence.map(_.string).mkString(" ")
     val graph = clearParser.dependencyGraph(text)
     val frames = clearSrl(graph)
     val frameIndex = frames.lastIndexWhere({ frame =>
-      println(frame.relation.node.tokenInterval)
+      println(frame.relation.node.text + ": " + frame.relation.node.tokenInterval)
       headPhrase.head.interval.superset(frame.relation.node.tokenInterval)
     })
     if (frameIndex < 0) {
