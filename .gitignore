@@ -20,4 +20,4 @@ project/plugins/project/
 .settings/
 
 # Scripts
-run.sh
+*.sh
