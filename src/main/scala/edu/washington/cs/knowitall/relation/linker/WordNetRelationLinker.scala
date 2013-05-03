@@ -28,7 +28,7 @@ class WordNetRelationLinker(wordNetPath: String)
       Set[String] = {
     val headPhrase = RelationPhraseFinder.getHeadPhrase(phrase);
     var words = headPhrase.map(_.string).map(word => PhraseNormalizer.normalize(word))
-    var wordNetSenses = Set[String]()
+    var wordNetSenses = Set.empty[String]
     while(words.size > 0 && wordNetSenses.size == 0) {
       var currentPhrase = words.mkString(" ")
       val word = wordNetUtils.getWordSense(currentPhrase, POS.VERB, 1);

@@ -15,18 +15,22 @@ import edu.knowitall.tool.postag.PostaggedToken
 import edu.washington.cs.knowitall.db.DerbyHandler
 import edu.washington.cs.knowitall.relation.Constants
 
+object ReverbRelationLinkerStaticVars {
+  val derbyHandler = new DerbyHandler(Constants.DERBY_SERVER + Constants.RELATION_BASEPATH + Constants.VNTABLES);
+  val srlLinker = SrlRelationLinker
+  val wnLinker = new WordNetRelationLinker(Constants.RELATION_BASEPATH + Constants.WORDNET_DICT)
+  val vnLinker = new VerbNetRelationLinker(derbyHandler, Constants.RELATION_BASEPATH + Constants.WORDNET_DICT)
+}
+
 /**
  * Hadoop job that links a Reverb extraction group to its SRL sense, WordNet sense, and VerbNet
  * sense.
  */
 object ReverbRelationLinker extends ScoobiApp {
-  val MAX_SENTENCE_LENGTH = 80
-  
-  def getLinks(srlLinker: RelationLinker, wnLinker: RelationLinker, vnLinker: RelationLinker,
-      phrase: Seq[PostaggedToken], context: Option[Seq[PostaggedToken]]):
+  def getLinks(phrase: Seq[PostaggedToken], context: Option[Seq[PostaggedToken]]):
       (Option[String], Option[String], Set[String]) = {
-//    val srlLinks = srlLinker.getRelationLinks(phrase, context)
-    val srlLinks = Set.empty[String]
+    import ReverbRelationLinkerStaticVars._
+    val srlLinks = srlLinker.getRelationLinks(phrase, context)
     val wnLinks = wnLinker.getRelationLinks(phrase, context)
     val vnLinks = vnLinker.getRelationLinks(phrase, context)
     
@@ -43,8 +47,7 @@ object ReverbRelationLinker extends ScoobiApp {
     (srlLink, wnLink, vnLinks)
   }
   
-  def linkRelations(srlLinker: RelationLinker, wnLinker: RelationLinker, vnLinker: RelationLinker,
-      inputGroups: DList[String]): DList[String] = {
+  def linkRelations(inputGroups: DList[String]): DList[String] = {
     inputGroups.flatMap({ line =>
       val cleanLine = line.filterNot({c => c==0})
       ReVerbExtractionGroup.deserializeFromString(cleanLine) match {
@@ -54,16 +57,15 @@ object ReverbRelationLinker extends ScoobiApp {
             val relTokens = extraction.relTokens
             val sentenceTokens = extraction.sentenceTokens
             
-            if (extraction.sentenceTokens.size > MAX_SENTENCE_LENGTH) {
+            if (extraction.sentenceTokens.size > 80) {
               None
             } else {
               try {
-                val (srlLink, wnLink, vnLinks) = getLinks(srlLinker, wnLinker, vnLinker, relTokens,
-                  Some(sentenceTokens))
+                val (srlLink, wnLink, vnLinks) = getLinks(relTokens, Some(sentenceTokens))
               
                 val key = List(
                   group.arg1.norm,
-                  group.arg2.norm,
+                  group.rel.norm,
                   group.arg2.norm,
                   ReVerbExtractionGroup.serializeEntity(group.arg1.entity),
                   ReVerbExtractionGroup.serializeEntity(group.arg2.entity),
@@ -101,7 +103,7 @@ object ReverbRelationLinker extends ScoobiApp {
     .combine((instance1: String, instance2: String) => instance1 + "\t" + instance2)
     .map {
       case (key: String, instances: String) => {
-        println(key + "\t" + instances);
+        System.err.println(key + "\t" + instances);
         key + "\t" + instances
       }
     }
@@ -134,13 +136,8 @@ object ReverbRelationLinker extends ScoobiApp {
     }
     
     if (parser.parse(args)) {
-      val derbyHandler = new DerbyHandler(Constants.DERBY_SERVER + basePath + Constants.VNTABLES);
       val inputGroups: DList[String] = TextInput.fromTextFile(inputPath)
-//      val srlLinker = SrlRelationLinker
-      val srlLinker = null
-      val wnLinker = new WordNetRelationLinker(basePath + Constants.WORDNET_DICT)
-      val vnLinker = new VerbNetRelationLinker(derbyHandler, basePath + Constants.WORDNET_DICT)
-      val outputGroups: DList[String] = linkRelations(srlLinker, wnLinker, vnLinker, inputGroups)
+      val outputGroups: DList[String] = linkRelations(inputGroups)
       persist(TextOutput.toTextFile(outputGroups, outputPath));
     }
   }

@@ -25,9 +25,13 @@ class WordNetUtils(wordNetPath: String) {
       val indexWord = wordNet.getIndexWord(word, partOfSpeech)
       val wordIds = indexWord.getWordIDs()
       val wordId = wordIds.get(senseNumber-1)
-      wordNet.getWord(wordId)
+      val result = wordNet.getWord(wordId)
+      result
     } catch {
-      case e: Exception => System.err.println("Error: couldn't get word sense for " + word); null
+      case e: Exception => {
+        System.err.println("Error: couldn't get word sense for \"%s\"".format(word));
+        null
+      }
     }
   }
   
