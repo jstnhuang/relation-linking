@@ -11,7 +11,10 @@ import edu.washington.cs.knowitall.db.DerbyHandler
 
 object VerbNetQueryExpander extends QueryExpander {
   val derbyHandler = new DerbyHandler(Constants.RELATION_BASEPATH + Constants.VNTABLES)
-  val verbNetLinker = new VerbNetRelationLinker(Constants.RELATION_BASEPATH)
+  val verbNetLinker = new VerbNetRelationLinker(
+    derbyHandler,
+    Constants.RELATION_BASEPATH + Constants.WORDNET_DICT
+  )
   
   override def getName(): String = "VerbNet"
     

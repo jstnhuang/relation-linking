@@ -6,6 +6,7 @@ import java.sql.Connection
 import java.sql.DriverManager
 import edu.washington.cs.knowitall.db.DerbyHandler
 import edu.knowitall.tool.postag.PostaggedToken
+import edu.knowitall.collection.immutable.Interval
 
 /**
  * Links a phrase to a set of VerbNet senses. It first uses the WordNet linker to get the WordNet
@@ -13,17 +14,17 @@ import edu.knowitall.tool.postag.PostaggedToken
  * you must have the Derby tables in basePath (the db must be named the same as Constants.VNTABLES).
  * You also need to have WordNet in basePath.
  */
-class VerbNetRelationLinker(basePath: String) extends RelationLinker {
-  val derbyHandler = new DerbyHandler(basePath + Constants.VNTABLES);
-
+class VerbNetRelationLinker(derbyHandler: DerbyHandler, wordNetPath: String)
+    extends RelationLinker {
   /**
    * Gets the VerbNet senses associated with the given phrase. It uses the WordNet linker to link
    * the phrase to a WordNet sense. Then, it does a lookup of that WordNet sense in the WordNet to
    * VerbNet table to get the VerbNet senses. If no senses are found, then it returns the empty set.
    */
-  def getRelationLinks(phrase: Seq[PostaggedToken], context: Option[Seq[PostaggedToken]] = None):
-      Set[String] = {
-    val wordNetLinker = new WordNetRelationLinker(basePath + Constants.WORDNET_DICT)
+  def getRelationLinks(
+      phrase: Seq[PostaggedToken],
+      context: Option[(Seq[PostaggedToken], Interval)] = None): Set[String] = {
+    val wordNetLinker = new WordNetRelationLinker(wordNetPath)
     val wordNetSenses = wordNetLinker.getRelationLinks(phrase)
     var relationLinks = Set[String]()
     if (wordNetSenses.size == 0) {

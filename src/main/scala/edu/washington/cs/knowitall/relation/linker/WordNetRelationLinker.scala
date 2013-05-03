@@ -9,12 +9,15 @@ import edu.mit.jwi.item.POS
 import edu.washington.cs.knowitall.WordNetUtils
 import edu.washington.cs.knowitall.relation.RelationPhraseFinder
 import edu.washington.cs.knowitall.relation.PhraseNormalizer
+import edu.washington.cs.knowitall.db.DerbyHandler
+import edu.knowitall.collection.immutable.Interval
 
 /**
  * Links verb phrases to WordNet senses. Currently just links to the most frequent WordNet sense of
  * a phrase/word.
  */
-class WordNetRelationLinker(wordNetPath: String) extends RelationLinker {
+class WordNetRelationLinker(wordNetPath: String)
+    extends RelationLinker {
   val wordNetUtils = new WordNetUtils(wordNetPath)
   
   /**
@@ -22,11 +25,12 @@ class WordNetRelationLinker(wordNetPath: String) extends RelationLinker {
    * off the last word and try again. Returns the empty set if no WordNet senses found at all. If
    * there is a WordNet sense, it will return the longest one.
    */
-  def getRelationLinks(phrase: Seq[PostaggedToken], context: Option[Seq[PostaggedToken]] = None):
-      Set[String] = {
+  def getRelationLinks(
+      phrase: Seq[PostaggedToken],
+      context: Option[(Seq[PostaggedToken], Interval)] = None): Set[String] = {
     val headPhrase = RelationPhraseFinder.getHeadPhrase(phrase);
     var words = headPhrase.map(_.string).map(word => PhraseNormalizer.normalize(word))
-    var wordNetSenses = Set[String]()
+    var wordNetSenses = Set.empty[String]
     while(words.size > 0 && wordNetSenses.size == 0) {
       var currentPhrase = words.mkString(" ")
       val word = wordNetUtils.getWordSense(currentPhrase, POS.VERB, 1);

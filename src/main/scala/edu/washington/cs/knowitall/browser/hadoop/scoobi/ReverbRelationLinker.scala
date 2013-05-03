@@ -12,16 +12,25 @@ import edu.washington.cs.knowitall.relation.linker.VerbNetRelationLinker
 import edu.washington.cs.knowitall.relation.linker.WordNetRelationLinker
 import edu.knowitall.openie.models.ReVerbInstanceSerializer
 import edu.knowitall.tool.postag.PostaggedToken
+import edu.washington.cs.knowitall.db.DerbyHandler
+import edu.washington.cs.knowitall.relation.Constants
+import edu.knowitall.collection.immutable.Interval
+//
+//object ReverbRelationLinkerStaticVars {
+//  
+//}
 
 /**
  * Hadoop job that links a Reverb extraction group to its SRL sense, WordNet sense, and VerbNet
  * sense.
  */
 object ReverbRelationLinker extends ScoobiApp {
-  val MAX_SENTENCE_LENGTH = 80
+  val derbyHandler = new DerbyHandler(Constants.DERBY_SERVER + Constants.RELATION_BASEPATH + Constants.VNTABLES);
+  val srlLinker = SrlRelationLinker
+  val wnLinker = new WordNetRelationLinker(Constants.RELATION_BASEPATH + Constants.WORDNET_DICT)
+  val vnLinker = new VerbNetRelationLinker(derbyHandler, Constants.RELATION_BASEPATH + Constants.WORDNET_DICT)
   
-  def getLinks(srlLinker: RelationLinker, wnLinker: RelationLinker, vnLinker: RelationLinker,
-      phrase: Seq[PostaggedToken], context: Option[Seq[PostaggedToken]]):
+  def getLinks(phrase: Seq[PostaggedToken], context: Option[(Seq[PostaggedToken], Interval)]):
       (Option[String], Option[String], Set[String]) = {
 //    val srlLinks = srlLinker.getRelationLinks(phrase, context)
     val srlLinks = Set.empty[String]
@@ -41,26 +50,28 @@ object ReverbRelationLinker extends ScoobiApp {
     (srlLink, wnLink, vnLinks)
   }
   
-  def linkRelations(srlLinker: RelationLinker, wnLinker: RelationLinker, vnLinker: RelationLinker,
-      inputGroups: DList[String]): DList[String] = {
+  def linkRelations(inputGroups: DList[String]): DList[String] = {
     inputGroups.flatMap({ line =>
-      ReVerbExtractionGroup.deserializeFromString(line) match {
+      val cleanLine = line.filterNot({c => c==0})
+      ReVerbExtractionGroup.deserializeFromString(cleanLine) match {
         case Some(group) => {
           group.instances.flatMap { instance =>
             val extraction = instance.extraction
             val relTokens = extraction.relTokens
             val sentenceTokens = extraction.sentenceTokens
             
-            if (extraction.sentenceTokens.size > MAX_SENTENCE_LENGTH) {
+            if (extraction.sentenceTokens.size > 80) {
               None
             } else {
               try {
-                val (srlLink, wnLink, vnLinks) = getLinks(srlLinker, wnLinker, vnLinker, relTokens,
-                  Some(sentenceTokens))
+                val (srlLink, wnLink, vnLinks) = getLinks(
+                  relTokens,
+                  Some(sentenceTokens, extraction.relInterval)
+                )
               
                 val key = List(
                   group.arg1.norm,
-                  group.arg2.norm,
+                  group.rel.norm,
                   group.arg2.norm,
                   ReVerbExtractionGroup.serializeEntity(group.arg1.entity),
                   ReVerbExtractionGroup.serializeEntity(group.arg2.entity),
@@ -74,13 +85,13 @@ object ReverbRelationLinker extends ScoobiApp {
                 Some(key, value)
               } catch {
                 case e: Error => {
-                  System.err.println("ReverbRelationLinker: error processing %s: %s".format(
-                    extraction.sentenceText, e));
+//                  System.err.println("ReverbRelationLinker: error processing %s: %s".format(
+//                    extraction.sentenceText, e));
                   None
                 }
                 case e: Exception => {
-                  System.err.println("ReverbRelationLinker: error processing %s: %s".format(
-                    extraction.sentenceText, e));
+//                  System.err.println("ReverbRelationLinker: error processing %s: %s".format(
+//                    extraction.sentenceText, e));
                   None
                 }
               }
@@ -129,10 +140,7 @@ object ReverbRelationLinker extends ScoobiApp {
     
     if (parser.parse(args)) {
       val inputGroups: DList[String] = TextInput.fromTextFile(inputPath)
-      val srlLinker = SrlRelationLinker
-      val wnLinker = new WordNetRelationLinker(basePath)
-      val vnLinker = new VerbNetRelationLinker(basePath)
-      val outputGroups: DList[String] = linkRelations(srlLinker, wnLinker, vnLinker, inputGroups)
+      val outputGroups: DList[String] = linkRelations(inputGroups)
       persist(TextOutput.toTextFile(outputGroups, outputPath));
     }
   }
