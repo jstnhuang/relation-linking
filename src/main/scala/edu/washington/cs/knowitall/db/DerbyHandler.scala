@@ -43,5 +43,5 @@ class DerbyHandler(dbPath: String) {
 }
 
 object DerbyConstants {
-  val DERBY_DRIVER = "org.apache.derby.jdbc.ClientDriver"
+  val DERBY_DRIVER = "org.apache.derby.jdbc.EmbeddedDriver"
 }

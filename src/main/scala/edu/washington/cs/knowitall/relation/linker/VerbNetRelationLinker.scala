@@ -22,7 +22,7 @@ class VerbNetRelationLinker(derbyHandler: DerbyHandler, wordNetPath: String)
    */
   def getRelationLinks(phrase: Seq[PostaggedToken], context: Option[Seq[PostaggedToken]] = None):
       Set[String] = {
-    val wordNetLinker = new WordNetRelationLinker(derbyHandler, wordNetPath)
+    val wordNetLinker = new WordNetRelationLinker(wordNetPath)
     val wordNetSenses = wordNetLinker.getRelationLinks(phrase)
     var relationLinks = Set[String]()
     if (wordNetSenses.size == 0) {

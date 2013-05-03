@@ -130,11 +130,11 @@ object ReverbRelationLinker extends ScoobiApp {
     }
     
     if (parser.parse(args)) {
-      val derbyHandler = new DerbyHandler(Constants.DERBY_SERVER + basePath + Constants.VNTABLES);
+      val derbyHandler = new DerbyHandler(basePath + Constants.VNTABLES);
       val inputGroups: DList[String] = TextInput.fromTextFile(inputPath)
 //      val srlLinker = SrlRelationLinker
       val srlLinker = null
-      val wnLinker = new WordNetRelationLinker(derbyHandler, basePath + Constants.WORDNET_DICT)
+      val wnLinker = new WordNetRelationLinker(basePath + Constants.WORDNET_DICT)
       val vnLinker = new VerbNetRelationLinker(derbyHandler, basePath + Constants.WORDNET_DICT)
       val outputGroups: DList[String] = linkRelations(srlLinker, wnLinker, vnLinker, inputGroups)
 //      persist(TextOutput.toTextFile(outputGroups, outputPath));
