@@ -29,7 +29,7 @@ class WordNetUtils(wordNetPath: String) {
       result
     } catch {
       case e: Exception => {
-        System.err.println("Error: couldn't get word sense for \"%s\"".format(word));
+//        System.err.println("Error: couldn't get word sense for \"%s\"".format(word));
         null
       }
     }

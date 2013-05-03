@@ -32,7 +32,6 @@ object ReverbRelationLinker extends ScoobiApp {
   
   def getLinks(phrase: Seq[PostaggedToken], context: Option[(Seq[PostaggedToken], Interval)]):
       (Option[String], Option[String], Set[String]) = {
-//    import ReverbRelationLinkerStaticVars._
     val srlLinks = srlLinker.getRelationLinks(phrase, context)
     val wnLinks = wnLinker.getRelationLinks(phrase, context)
     val vnLinks = vnLinker.getRelationLinks(phrase, context)
@@ -87,13 +86,11 @@ object ReverbRelationLinker extends ScoobiApp {
                 case e: Error => {
                   System.err.println("ReverbRelationLinker: error processing %s: %s".format(
                     extraction.sentenceText, e));
-                  e.printStackTrace();
                   None
                 }
                 case e: Exception => {
                   System.err.println("ReverbRelationLinker: error processing %s: %s".format(
                     extraction.sentenceText, e));
-                  e.printStackTrace();
                   None
                 }
               }
