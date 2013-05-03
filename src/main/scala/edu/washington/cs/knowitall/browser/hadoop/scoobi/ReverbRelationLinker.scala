@@ -26,7 +26,7 @@ object ReverbRelationLinker extends ScoobiApp {
       phrase: Seq[PostaggedToken], context: Option[Seq[PostaggedToken]]):
       (Option[String], Option[String], Set[String]) = {
 //    val srlLinks = srlLinker.getRelationLinks(phrase, context)
-    srlLinks = Set.empty[String]
+    val srlLinks = Set.empty[String]
     val wnLinks = wnLinker.getRelationLinks(phrase, context)
     val vnLinks = vnLinker.getRelationLinks(phrase, context)
     
