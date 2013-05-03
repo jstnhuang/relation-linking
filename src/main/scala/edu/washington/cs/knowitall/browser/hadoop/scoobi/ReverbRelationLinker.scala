@@ -98,6 +98,7 @@ object ReverbRelationLinker extends ScoobiApp {
     .combine((instance1: String, instance2: String) => instance1 + "\t" + instance2)
     .map {
       case (key: String, instances: String) => {
+        println(key + "\t" + instances);
         key + "\t" + instances
       }
     }
