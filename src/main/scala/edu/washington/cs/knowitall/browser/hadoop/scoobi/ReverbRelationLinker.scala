@@ -15,24 +15,25 @@ import edu.knowitall.tool.postag.PostaggedToken
 import edu.washington.cs.knowitall.db.DerbyHandler
 import edu.washington.cs.knowitall.relation.Constants
 import edu.knowitall.collection.immutable.Interval
-
-object ReverbRelationLinkerStaticVars {
-  val derbyHandler = new DerbyHandler(Constants.DERBY_SERVER + Constants.RELATION_BASEPATH + Constants.VNTABLES);
-  val srlLinker = SrlRelationLinker
-  val wnLinker = new WordNetRelationLinker(Constants.RELATION_BASEPATH + Constants.WORDNET_DICT)
-  val vnLinker = new VerbNetRelationLinker(derbyHandler, Constants.RELATION_BASEPATH + Constants.WORDNET_DICT)
-}
+//
+//object ReverbRelationLinkerStaticVars {
+//  
+//}
 
 /**
  * Hadoop job that links a Reverb extraction group to its SRL sense, WordNet sense, and VerbNet
  * sense.
  */
 object ReverbRelationLinker extends ScoobiApp {
+  val derbyHandler = new DerbyHandler(Constants.DERBY_SERVER + Constants.RELATION_BASEPATH + Constants.VNTABLES);
+  val srlLinker = SrlRelationLinker
+  val wnLinker = new WordNetRelationLinker(Constants.RELATION_BASEPATH + Constants.WORDNET_DICT)
+  val vnLinker = new VerbNetRelationLinker(derbyHandler, Constants.RELATION_BASEPATH + Constants.WORDNET_DICT)
+  
   def getLinks(phrase: Seq[PostaggedToken], context: Option[(Seq[PostaggedToken], Interval)]):
       (Option[String], Option[String], Set[String]) = {
-    import ReverbRelationLinkerStaticVars._
+//    import ReverbRelationLinkerStaticVars._
     val srlLinks = srlLinker.getRelationLinks(phrase, context)
-//    val srlLinks = Set.empty[String]
     val wnLinks = wnLinker.getRelationLinks(phrase, context)
     val vnLinks = vnLinker.getRelationLinks(phrase, context)
     
@@ -108,7 +109,6 @@ object ReverbRelationLinker extends ScoobiApp {
     .combine((instance1: String, instance2: String) => instance1 + "\t" + instance2)
     .map {
       case (key: String, instances: String) => {
-        System.err.println(key + "\t" + instances);
         key + "\t" + instances
       }
     }
