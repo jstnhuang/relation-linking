@@ -84,13 +84,13 @@ object ReverbRelationLinker extends ScoobiApp {
                 Some(key, value)
               } catch {
                 case e: Error => {
-                  System.err.println("ReverbRelationLinker: error processing %s: %s".format(
-                    extraction.sentenceText, e));
+//                  System.err.println("ReverbRelationLinker: error processing %s: %s".format(
+//                    extraction.sentenceText, e));
                   None
                 }
                 case e: Exception => {
-                  System.err.println("ReverbRelationLinker: error processing %s: %s".format(
-                    extraction.sentenceText, e));
+//                  System.err.println("ReverbRelationLinker: error processing %s: %s".format(
+//                    extraction.sentenceText, e));
                   None
                 }
               }
