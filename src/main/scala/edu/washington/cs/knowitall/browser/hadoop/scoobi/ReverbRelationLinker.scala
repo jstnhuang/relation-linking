@@ -14,10 +14,11 @@ import edu.knowitall.openie.models.ReVerbInstanceSerializer
 import edu.knowitall.tool.postag.PostaggedToken
 import edu.washington.cs.knowitall.db.DerbyHandler
 import edu.washington.cs.knowitall.relation.Constants
+import edu.knowitall.collection.immutable.Interval
 
 object ReverbRelationLinkerStaticVars {
   val derbyHandler = new DerbyHandler(Constants.DERBY_SERVER + Constants.RELATION_BASEPATH + Constants.VNTABLES);
-//  val srlLinker = SrlRelationLinker
+  val srlLinker = SrlRelationLinker
   val wnLinker = new WordNetRelationLinker(Constants.RELATION_BASEPATH + Constants.WORDNET_DICT)
   val vnLinker = new VerbNetRelationLinker(derbyHandler, Constants.RELATION_BASEPATH + Constants.WORDNET_DICT)
 }
@@ -27,11 +28,11 @@ object ReverbRelationLinkerStaticVars {
  * sense.
  */
 object ReverbRelationLinker extends ScoobiApp {
-  def getLinks(phrase: Seq[PostaggedToken], context: Option[Seq[PostaggedToken]]):
+  def getLinks(phrase: Seq[PostaggedToken], context: Option[(Seq[PostaggedToken], Interval)]):
       (Option[String], Option[String], Set[String]) = {
     import ReverbRelationLinkerStaticVars._
-//    val srlLinks = srlLinker.getRelationLinks(phrase, context)
-    val srlLinks = Set.empty[String]
+    val srlLinks = srlLinker.getRelationLinks(phrase, context)
+//    val srlLinks = Set.empty[String]
     val wnLinks = wnLinker.getRelationLinks(phrase, context)
     val vnLinks = vnLinker.getRelationLinks(phrase, context)
     
@@ -56,14 +57,16 @@ object ReverbRelationLinker extends ScoobiApp {
           group.instances.flatMap { instance =>
             val extraction = instance.extraction
             val relTokens = extraction.relTokens
-            println(extraction.relInterval)
             val sentenceTokens = extraction.sentenceTokens
             
             if (extraction.sentenceTokens.size > 80) {
               None
             } else {
               try {
-                val (srlLink, wnLink, vnLinks) = getLinks(relTokens, Some(sentenceTokens))
+                val (srlLink, wnLink, vnLinks) = getLinks(
+                  relTokens,
+                  Some(sentenceTokens, extraction.relInterval)
+                )
               
                 val key = List(
                   group.arg1.norm,
