@@ -22,6 +22,26 @@ case class QueryRel(
   def getSrlQueryString(): Option[String] = setOptionToUnionString(srlLinks)
   def getWnQueryString(): Option[String] = setOptionToUnionString(wnLinks)
   def getVnQueryString(): Option[String] = setOptionToUnionString(vnLinks)
+  
+  override def toString(): String = {
+    val relString = rel match {
+      case Some(str) => str
+      case None => ""
+    }
+    val srlString = srlLinks match {
+      case Some(links) => "SRL: " + links.mkString(", ")
+      case None => ""
+    }
+    val wnString = wnLinks match {
+      case Some(links) => "WordNet: " + links.mkString(", ")
+      case None => ""
+    }
+    val vnString = vnLinks match {
+      case Some(links) => "VerbNet: " + links.mkString(", ")
+      case None => ""
+    }
+    List(relString, srlString, wnString, vnString).filterNot(_ == "").mkString("; ")
+  }
 }
 
 object QueryRel {

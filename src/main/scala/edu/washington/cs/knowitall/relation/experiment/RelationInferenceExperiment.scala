@@ -18,7 +18,7 @@ class RelationInferenceExperiment (solrUrl: String, inputDir: String, outputDir:
   val WORDNET_PATH = Constants.wordNetPath(inputDir)
   val VERBNET_PATH = Constants.verbNetDbPath(inputDir)
   val BENCHMARK_QUERIES_PATH = List(inputDir, "benchmark-queries.tsv").mkString(File.separator)
-  val SENTENCES_PATH = List(outputDir, "sentences.txt").mkString(File.separator)
+  val SENTENCES_PATH = List(outputDir, "sentences.tsv").mkString(File.separator)
   type REG = ExtractionGroup[ReVerbExtraction];
   
   /**
@@ -38,17 +38,23 @@ class RelationInferenceExperiment (solrUrl: String, inputDir: String, outputDir:
   }
   
   /**
-   * Output lines of the form: system name, benchmark query, expanded query, tuple, tag, sentence
+   * Output lines of the form: system name, benchmark query, expanded query, tuple, tuple links,
+   * tag, sentence
    */
   def outputSentences(writer: BufferedWriter, name: String, testQuery: BenchmarkQuery,
       expandedQuery: QueryRel, groups: Set[REG]) {
     val tag = ""
     groups.foreach({ group =>
       val tuple = "(%s, %s, %s)".format(group.arg1.norm, group.rel.norm, group.arg2.norm)
+      val tupleLinks = "SRL: %s; WordNet: %s; VerbNet: %s".format(
+        group.rel.srlLink.getOrElse("X"),
+        group.rel.wnLink.getOrElse("X"),
+        if (group.rel.vnLinks.isEmpty) { "X" } else { group.rel.vnLinks.mkString(", ") } 
+      )
       group.instances.foreach({ instance =>
         val sentence = instance.extraction.sentenceText
-        writer.write("%s\t%s\t%s\t%s\t%s\t%s".format(
-          name, testQuery, expandedQuery, tuple, tag, sentence
+        writer.write("%s\t%s\t%s\t%s\t%s\t%s\t%s".format(
+          name, testQuery, expandedQuery, tuple, tupleLinks, tag, sentence
         ))
         writer.newLine()
       })
@@ -60,7 +66,7 @@ class RelationInferenceExperiment (solrUrl: String, inputDir: String, outputDir:
    */
   def run(): Unit = {
     val baselineExpander = BaselineQueryExpander
-//    val srlExpander = SrlQueryExpander
+    val srlExpander = SrlQueryExpander
     val wordNetExpander = new WordNetQueryExpander(WORDNET_PATH)
     val verbNetExpander = new VerbNetQueryExpander(VERBNET_PATH, WORDNET_PATH)
     val queryExpanders: Seq[QueryExpander] = List(baselineExpander, wordNetExpander, verbNetExpander)
