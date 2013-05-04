@@ -21,10 +21,11 @@ object SrlQueryExpander extends QueryExpander {
     val sentence = arg1Tags ++ relTags ++ arg2Tags
     val relInterval = Interval.span(relTags.map(_.interval))
     val srlLinks = SrlRelationLinker.getRelationLinks(relTags, Some((sentence, relInterval)))
-    new OpenIeQuery(
-      QueryArg.fromString(rawQuery.arg1.getOrElse("")),
-      new QueryRel(srlLinks=Some(srlLinks)),
-      QueryArg.fromString(rawQuery.arg2.getOrElse(""))
-    )
+    if (srlLinks.size == 0) {
+      System.err.println("No SRL senses for " + queryRel.rel.getOrElse("(None)"))
+      null
+    } else {
+      new OpenIeQuery(queryArg1,  new QueryRel(srlLinks=Some(srlLinks)), queryArg2)
+    }
   }
 }

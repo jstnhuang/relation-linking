@@ -10,6 +10,9 @@ import edu.washington.cs.knowitall.relation.linker.VerbNetRelationLinker
 import edu.washington.cs.knowitall.db.DerbyHandler
 import edu.washington.cs.knowitall.relation.Constants
 
+/**
+ * Expands the relation phrase of a query based on its VerbNet sense.
+ */
 class VerbNetQueryExpander(verbNetDbPath: String, wordNetPath: String) extends QueryExpander {
   val verbNetLinker = new VerbNetRelationLinker(verbNetDbPath, wordNetPath)
   val derbyHandler = new DerbyHandler(verbNetDbPath)
@@ -27,11 +30,7 @@ class VerbNetQueryExpander(verbNetDbPath: String, wordNetPath: String) extends Q
     
     if (verbNetSenses.size == 0) {
       System.err.println("No entailed VerbNet senses for " + queryRel.rel.getOrElse("(None)"))
-      new OpenIeQuery(
-        QueryArg.fromString(rawQuery.arg1.getOrElse("")),
-        new QueryRel(),
-        QueryArg.fromString(rawQuery.arg2.getOrElse(""))
-      )
+      null
     } else {
       // Find all entailed VerbNet senses.
       val queryString = (
@@ -52,11 +51,7 @@ class VerbNetQueryExpander(verbNetDbPath: String, wordNetPath: String) extends Q
         entailedSenses += entailedSense
       }
       
-      new OpenIeQuery(
-        QueryArg.fromString(rawQuery.arg1.getOrElse("")),
-        new QueryRel(vnLinks=Some(entailedSenses)),
-        QueryArg.fromString(rawQuery.arg2.getOrElse(""))
-      )
+      new OpenIeQuery(queryArg1, new QueryRel(vnLinks=Some(entailedSenses)), queryArg2)
     }
   }
 }

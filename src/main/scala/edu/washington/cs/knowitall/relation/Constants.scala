@@ -7,6 +7,6 @@ object Constants {
     List(baseDir, "WordNet-3.0", "dict").mkString(File.separator)
   }
   def verbNetDbPath(baseDir: String): String = {
-    List("//localhost:1527/", baseDir, "vntables").mkString(File.separator)
+    List("localhost:1527", baseDir, "vntables").mkString(File.separator)
   }
 }

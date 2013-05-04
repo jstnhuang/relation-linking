@@ -8,8 +8,16 @@ import edu.knowitall.tool.tokenize.OpenNlpTokenizer
 import edu.knowitall.tool.tokenize.Token
 
 trait QueryExpander {
+  /**
+   * The name of this query expansion system.
+   */
   def getName(): String
+  
+  /**
+   * Expand the given query, or return null if the query can't be expanded for some reason. 
+   */
   def expandQuery(rawQuery: BenchmarkQuery): OpenIeQuery
+  
   val tokenizer = new OpenNlpTokenizer()
   val tagger = new OpenNlpPostagger()
   

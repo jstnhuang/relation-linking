@@ -19,7 +19,7 @@ class OpenIeQuery (queryArg1: QueryArg, queryRel: QueryRel, queryArg2: QueryArg)
       ("rel", queryRel.getRelQueryString()),
       ("srl_link", queryRel.getSrlQueryString()),
       ("wn_link", queryRel.getWnQueryString()),
-      ("vn_link", queryRel.getVnQueryString()),
+      ("vn_links", queryRel.getVnQueryString()),
       ("arg2", queryArg2.getArgQueryString()),
       ("arg2_entity_id", queryArg2.getEntityQueryString()),
       ("arg2_types", queryArg2.getTypeQueryString())
@@ -31,4 +31,6 @@ class OpenIeQuery (queryArg1: QueryArg, queryRel: QueryRel, queryArg2: QueryArg)
       }
     }).flatMap(x => x).mkString(" ")
   }
+  
+  def getQueryRel(): QueryRel = queryRel
 }

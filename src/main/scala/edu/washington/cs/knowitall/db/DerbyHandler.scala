@@ -10,7 +10,7 @@ import java.sql.PreparedStatement
  * Light wrapper around a Derby DB connection.
  */
 class DerbyHandler(dbPath: String) {
-  val connectionUrl = "jdbc:derby:" + dbPath;
+  val connectionUrl = "jdbc:derby://" + dbPath;
   var connection: Connection = null;
   try {
     Class.forName(DerbyConstants.DERBY_DRIVER).newInstance();
