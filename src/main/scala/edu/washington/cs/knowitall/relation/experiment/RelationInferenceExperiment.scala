@@ -69,7 +69,7 @@ class RelationInferenceExperiment (solrUrl: String, inputDir: String, outputDir:
     val srlExpander = SrlQueryExpander
     val wordNetExpander = new WordNetQueryExpander(WORDNET_PATH)
     val verbNetExpander = new VerbNetQueryExpander(VERBNET_PATH, WORDNET_PATH)
-    val queryExpanders: Seq[QueryExpander] = List(baselineExpander, wordNetExpander, verbNetExpander)
+    val queryExpanders: Seq[QueryExpander] = List(baselineExpander, srlExpander, wordNetExpander, verbNetExpander)
     val benchmarkQueries = getTestQueries()
     
     val sentenceWriter = new BufferedWriter(new FileWriter(SENTENCES_PATH))
