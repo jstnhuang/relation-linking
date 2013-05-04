@@ -2,7 +2,11 @@ package edu.washington.cs.knowitall.relation.experiment
 
 import edu.knowitall.tool.postag.OpenNlpPostagger
 
-case class BenchmarkQuery(arg1: Option[String], rel: Option[String], arg2: Option[String])
+case class BenchmarkQuery(arg1: Option[String], rel: Option[String], arg2: Option[String]) {
+  override def toString(): String {
+    "%s, %s, %s".format
+  }
+}
 
 object BenchmarkQuery {
   def fromLine(line: String): BenchmarkQuery = {

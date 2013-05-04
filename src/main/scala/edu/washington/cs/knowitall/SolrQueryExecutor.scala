@@ -15,9 +15,11 @@ import edu.knowitall.openie.models.FreeBaseType
 import java.io.ObjectInputStream
 import edu.knowitall.openie.models.Instance
 import org.apache.solr.client.solrj.SolrQuery
+import edu.knowitall.openie.models.serialize.Chill
 
 class SolrQueryExecutor (solrUrl: String) extends QueryExecutor {
   val solr = new HttpSolrServer(solrUrl)
+  val kryo = Chill.createInjection()
   
   /**
    * Query the Solr DB and return the results as an iterator.
@@ -36,17 +38,13 @@ class SolrQueryExecutor (solrUrl: String) extends QueryExecutor {
    * Converts a Solr document into a ReVerb extraction group.
    */
   def convertSolrDocument(solrDocument: SolrDocument): ExtractionGroup[ReVerbExtraction] = {
-    val instances = using(new ByteArrayInputStream(
-        solrDocument.getFieldValue("instances").asInstanceOf[Array[Byte]])) { is =>
-      using(new ObjectInputStream(is) {
-        override def resolveClass(desc: java.io.ObjectStreamClass): Class[_] = {
-          try { Class.forName(desc.getName, false, getClass.getClassLoader) }
-          catch { case ex: ClassNotFoundException => super.resolveClass(desc) }
-        }
-      }) { ois =>
-        ois.readObject().asInstanceOf[List[Instance[ReVerbExtraction]]]
-      }
-    }
+    val bytes = solrDocument.getFieldValue("instances").asInstanceOf[Array[Byte]]
+    val instances: List[Instance[ReVerbExtraction]] =
+      kryo.invert(bytes).getOrElse(
+        throw new IllegalArgumentException(
+          "Could not deserialize instances: " + bytes.toSeq.toString
+        )
+      ).asInstanceOf[List[Instance[ReVerbExtraction]]]
     
     val arg1 = ExtractionArgument(
       norm = solrDocument.getFieldValue("arg1").asInstanceOf[String],
