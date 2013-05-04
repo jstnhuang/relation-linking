@@ -10,12 +10,9 @@ import edu.washington.cs.knowitall.relation.linker.VerbNetRelationLinker
 import edu.washington.cs.knowitall.db.DerbyHandler
 import edu.washington.cs.knowitall.relation.Constants
 
-object VerbNetQueryExpander extends QueryExpander {
-  val derbyHandler = new DerbyHandler(Constants.RELATION_BASEPATH + Constants.VNTABLES)
-  val verbNetLinker = new VerbNetRelationLinker(
-    derbyHandler,
-    Constants.RELATION_BASEPATH + Constants.WORDNET_DICT
-  )
+class VerbNetQueryExpander(verbNetDbPath: String, wordNetPath: String) extends QueryExpander {
+  val verbNetLinker = new VerbNetRelationLinker(verbNetDbPath, wordNetPath)
+  val derbyHandler = new DerbyHandler(verbNetDbPath)
   
   override def getName(): String = "VerbNet"
     

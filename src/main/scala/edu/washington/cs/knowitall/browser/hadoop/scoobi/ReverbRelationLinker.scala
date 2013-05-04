@@ -21,10 +21,12 @@ import edu.knowitall.collection.immutable.Interval
  * sense.
  */
 object ReverbRelationLinker extends ScoobiApp {
-  val derbyHandler = new DerbyHandler(Constants.DERBY_SERVER + Constants.RELATION_BASEPATH + Constants.VNTABLES);
+  val BASE_PATH = "/scratch2/rlinking/" // Hard-coded for now, scoobi is weird.
+  val WORDNET_PATH = Constants.wordNetPath(BASE_PATH)
+  val VERBNET_PATH = Constants.verbNetDbPath(BASE_PATH)
   val srlLinker = SrlRelationLinker
-  val wnLinker = new WordNetRelationLinker(Constants.RELATION_BASEPATH + Constants.WORDNET_DICT)
-  val vnLinker = new VerbNetRelationLinker(derbyHandler, Constants.RELATION_BASEPATH + Constants.WORDNET_DICT)
+  val wnLinker = new WordNetRelationLinker(WORDNET_PATH)
+  val vnLinker = new VerbNetRelationLinker(VERBNET_PATH, WORDNET_PATH)
   
   def getLinks(phrase: Seq[PostaggedToken], context: Option[(Seq[PostaggedToken], Interval)]):
       (Option[String], Option[String], Set[String]) = {
@@ -106,21 +108,16 @@ object ReverbRelationLinker extends ScoobiApp {
       }
     }
   }
-  
+
+
   /**
    * Gathers inputs, launches the job, and persists the output.
    */
   def run() {
-    var basePath = ""
     var inputPath = ""
     var outputPath = ""
     
     val parser = new OptionParser() {
-      arg(
-        "basePath",
-        "Path with WordNet and VerbNet tables.",
-        {str => basePath = str}
-      )
       arg(
         "inputPath",
         "HDFS input path to tab delimited extraction groups.",

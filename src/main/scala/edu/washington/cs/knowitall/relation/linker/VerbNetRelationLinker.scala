@@ -14,8 +14,10 @@ import edu.knowitall.collection.immutable.Interval
  * you must have the Derby tables in basePath (the db must be named the same as Constants.VNTABLES).
  * You also need to have WordNet in basePath.
  */
-class VerbNetRelationLinker(derbyHandler: DerbyHandler, wordNetPath: String)
+class VerbNetRelationLinker(verbNetDbPath: String, wordNetPath: String)
     extends RelationLinker {
+  val derbyHandler = new DerbyHandler(verbNetDbPath)
+  
   /**
    * Gets the VerbNet senses associated with the given phrase. It uses the WordNet linker to link
    * the phrase to a WordNet sense. Then, it does a lookup of that WordNet sense in the WordNet to
