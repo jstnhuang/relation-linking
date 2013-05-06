@@ -54,7 +54,7 @@ class RelationInferenceExperiment (solrUrl: String, inputDir: String, outputDir:
       group.instances.foreach({ instance =>
         val sentence = instance.extraction.sentenceText
         writer.write("%s\t%s\t%s\t%s\t%s\t%s\t%s".format(
-          name, testQuery, expandedQuery, tuple, tupleLinks, tag, sentence
+          name, testQuery, expandedQuery, tuple, tag, sentence, tupleLinks
         ))
         writer.newLine()
       })
