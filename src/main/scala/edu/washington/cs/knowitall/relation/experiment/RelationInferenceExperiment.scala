@@ -65,8 +65,8 @@ class RelationInferenceExperiment(solrUrl: String, inputDir: String, outputDir: 
   }
   
   /**
-   * Output lines of the form: system name, benchmark query, expanded query, tuple, tuple links,
-   * tag, sentence
+   * Output lines of the form: system name, benchmark query, expanded query, tuple, tag, sentence,
+   * tuple links.
    */
   def outputSentences(writer: BufferedWriter, name: String, testQuery: BenchmarkQuery,
       expandedQuery: QueryRel, groups: Set[REG], tags: TagMap) {
@@ -80,7 +80,7 @@ class RelationInferenceExperiment(solrUrl: String, inputDir: String, outputDir: 
         if (group.rel.vnLinks.isEmpty) { "X" } else { group.rel.vnLinks.mkString(", ") } 
       )
       group.instances.foreach({ instance =>
-        val sentence = instance.extraction.sentenceText.filterNot(_ == '"')
+        val sentence = instance.extraction.sentenceText.filterNot(_ == '"').trim()
         val tag = tags.getOrElse((testQueryStr, tuple, sentence), "")
         val result = new RelationInferenceResult(
           name, testQueryStr, expandedQueryStr, tuple, tag, sentence, tupleLinks
@@ -99,7 +99,9 @@ class RelationInferenceExperiment(solrUrl: String, inputDir: String, outputDir: 
     val srlExpander = SrlQueryExpander
     val wordNetExpander = new WordNetQueryExpander(WORDNET_PATH)
     val verbNetExpander = new VerbNetQueryExpander(VERBNET_PATH, WORDNET_PATH)
-    val queryExpanders: Seq[QueryExpander] = List(baselineExpander, srlExpander, wordNetExpander, verbNetExpander)
+    val queryExpanders: Seq[QueryExpander] = List(
+      baselineExpander, srlExpander, wordNetExpander, verbNetExpander
+    )
     val benchmarkQueries = getTestQueries()
     val tags = getTags(TAGS_PATH)
     
