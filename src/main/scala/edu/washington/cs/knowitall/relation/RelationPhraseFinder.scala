@@ -11,4 +11,8 @@ object RelationPhraseFinder {
     val index = relTags.lastIndexWhere(token => token.isVerb)
     relTags.drop(index);
   }
+  def getPrepositions(relTags: Seq[PostaggedToken]): Seq[PostaggedToken] = {
+    val lastVerbIndex = relTags.lastIndexWhere(token => token.isVerb)
+    relTags.drop(lastVerbIndex + 1).filter(_.isPreposition)
+  }
 }

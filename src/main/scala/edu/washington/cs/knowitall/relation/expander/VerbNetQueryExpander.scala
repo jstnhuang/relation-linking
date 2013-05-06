@@ -1,5 +1,6 @@
 package edu.washington.cs.knowitall.relation.expander
 
+import edu.washington.cs.knowitall.relation.RelationPhraseFinder
 import edu.washington.cs.knowitall.relation.experiment.BenchmarkQuery
 import edu.washington.cs.knowitall.model.OpenIeQuery
 import edu.knowitall.tool.tokenize.OpenNlpTokenizer
@@ -27,6 +28,12 @@ class VerbNetQueryExpander(verbNetDbPath: String, wordNetPath: String) extends Q
     
     // Find VerbNet senses for this query.
     val verbNetSenses = verbNetLinker.getRelationLinks(relTags)
+    val preps = RelationPhraseFinder.getPrepositions(relTags)
+    val relPreps = if (!preps.isEmpty) {
+      Some(relTags.map(_.string).mkString(" "))
+    } else {
+      None
+    }
     
     if (verbNetSenses.size == 0) {
       System.err.println("No entailed VerbNet senses for " + queryRel.rel.getOrElse("(None)"))
@@ -51,7 +58,11 @@ class VerbNetQueryExpander(verbNetDbPath: String, wordNetPath: String) extends Q
         entailedSenses += entailedSense
       }
       
-      new OpenIeQuery(queryArg1, new QueryRel(vnLinks=Some(entailedSenses)), queryArg2)
+      new OpenIeQuery(
+        queryArg1,
+        new QueryRel(rel=relPreps, vnLinks=Some(entailedSenses)),
+        queryArg2
+      )
     }
   }
 }

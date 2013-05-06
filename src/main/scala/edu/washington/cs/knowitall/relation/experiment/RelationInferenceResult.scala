@@ -8,7 +8,7 @@ class RelationInferenceResult(systemName: String, testQuery: String, expandedQue
   override def toString(): String = {
     "%s\t%s\t%s\t%s\t%s\t%s\t%s".format(
       systemName, testQuery, expandedQuery, tuple, tag, sentence, tupleLinks
-    )
+    ).filterNot(_ == '"')
   }
 
   def getTagKey() = (testQuery, tuple, sentence)
@@ -17,7 +17,7 @@ class RelationInferenceResult(systemName: String, testQuery: String, expandedQue
 
 object RelationInferenceResult {
   def fromString(line: String): RelationInferenceResult = {
-    val columns = "\t".r.split(line)
+    val columns = "\t".r.split(line).map(_.trim())
     new RelationInferenceResult(columns(0), columns(1), columns(2), columns(3), columns(4),
       columns(5), columns(6))
   }

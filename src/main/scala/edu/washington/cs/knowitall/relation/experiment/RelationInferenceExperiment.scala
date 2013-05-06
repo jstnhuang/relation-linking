@@ -42,7 +42,7 @@ class RelationInferenceExperiment(solrUrl: String, inputDir: String, outputDir: 
     val files = new File(tagDir).listFiles.filter(_.getName.endsWith(".tsv"))
     var tags: TagMap = scala.collection.mutable.Map.empty[(String, String, String), String]
     files.foreach({ file =>
-      val mappings = Source.fromFile(file).getLines().foreach({ line =>
+      Source.fromFile(file).getLines().foreach({ line =>
         val result = RelationInferenceResult.fromString(line.trim())
         val tagKey = result.getTagKey()
         val tag = result.getTag()
@@ -80,7 +80,7 @@ class RelationInferenceExperiment(solrUrl: String, inputDir: String, outputDir: 
         if (group.rel.vnLinks.isEmpty) { "X" } else { group.rel.vnLinks.mkString(", ") } 
       )
       group.instances.foreach({ instance =>
-        val sentence = instance.extraction.sentenceText
+        val sentence = instance.extraction.sentenceText.filterNot(_ == '"')
         val tag = tags.getOrElse((testQueryStr, tuple, sentence), "")
         val result = new RelationInferenceResult(
           name, testQueryStr, expandedQueryStr, tuple, tag, sentence, tupleLinks

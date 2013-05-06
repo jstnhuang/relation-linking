@@ -1,5 +1,6 @@
 package edu.washington.cs.knowitall.relation.expander
 
+import edu.washington.cs.knowitall.relation.RelationPhraseFinder
 import edu.washington.cs.knowitall.relation.experiment.BenchmarkQuery
 import edu.washington.cs.knowitall.model.OpenIeQuery
 import edu.washington.cs.knowitall.model.QueryRel
@@ -21,11 +22,21 @@ object SrlQueryExpander extends QueryExpander {
     val sentence = arg1Tags ++ relTags ++ arg2Tags
     val relInterval = Interval.span(relTags.map(_.interval))
     val srlLinks = SrlRelationLinker.getRelationLinks(relTags, Some((sentence, relInterval)))
+    val preps = RelationPhraseFinder.getPrepositions(relTags)
+    val relPreps = if (!preps.isEmpty) {
+      Some(preps.map(_.string).mkString(" "))
+    } else {
+      None
+    }
     if (srlLinks.size == 0) {
       System.err.println("No SRL senses for " + queryRel.rel.getOrElse("(None)"))
       null
     } else {
-      new OpenIeQuery(queryArg1,  new QueryRel(srlLinks=Some(srlLinks)), queryArg2)
+      new OpenIeQuery(
+        queryArg1,
+        new QueryRel(rel=relPreps, srlLinks=Some(srlLinks)),
+        queryArg2
+      )
     }
   }
 }
