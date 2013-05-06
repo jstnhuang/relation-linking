@@ -13,13 +13,15 @@ import edu.washington.cs.knowitall.relation.Constants
 import edu.washington.cs.knowitall.relation.expander.WordNetQueryExpander
 import edu.washington.cs.knowitall.model.QueryRel
 
-class RelationInferenceExperiment (solrUrl: String, inputDir: String, outputDir: String) {
+class RelationInferenceExperiment(solrUrl: String, inputDir: String, outputDir: String) {
   val solrExecutor = new SolrQueryExecutor(solrUrl)
   val WORDNET_PATH = Constants.wordNetPath(inputDir)
   val VERBNET_PATH = Constants.verbNetDbPath(inputDir)
   val BENCHMARK_QUERIES_PATH = List(inputDir, "benchmark-queries.tsv").mkString(File.separator)
+  val TAGS_PATH = List(inputDir, "tags").mkString(File.separator)
   val SENTENCES_PATH = List(outputDir, "sentences.tsv").mkString(File.separator)
   type REG = ExtractionGroup[ReVerbExtraction];
+  type TagMap = scala.collection.mutable.Map[(String, String, String), String];
   
   /**
    * Reads test queries from input file.
@@ -30,6 +32,31 @@ class RelationInferenceExperiment (solrUrl: String, inputDir: String, outputDir:
       testQueries = BenchmarkQuery.fromLine(line)::testQueries
     })
     testQueries
+  }
+
+  /**
+   * Reads files from the tags directory and stores all the tags. Also reports if there are
+   * any contradictary tags.
+   */
+  def getTags(tagDir: String): TagMap = {
+    val files = new File(tagDir).listFiles.filter(_.getName.endsWith(".tsv"))
+    var tags: TagMap = scala.collection.mutable.Map.empty[(String, String, String), String]
+    files.foreach({ file =>
+      val mappings = Source.fromFile(file).getLines().foreach({ line =>
+        val result = RelationInferenceResult.fromString(line.trim())
+        val tagKey = result.getTagKey()
+        val tag = result.getTag()
+        if (tag.contains(tagKey) && tags.get(tagKey) != tag) {
+          throw new RuntimeException("Contradicting tags in %s: %s has tags %s and %s".format(
+            file.getName, tagKey, tags.get(tagKey), tag
+          ))
+        }
+        if (tag != "") {
+          tags += (tagKey -> tag)
+        }
+      })
+    });
+    tags
   }
   
   def runQuery(query: OpenIeQuery): Set[REG] = {
@@ -42,8 +69,9 @@ class RelationInferenceExperiment (solrUrl: String, inputDir: String, outputDir:
    * tag, sentence
    */
   def outputSentences(writer: BufferedWriter, name: String, testQuery: BenchmarkQuery,
-      expandedQuery: QueryRel, groups: Set[REG]) {
-    val tag = ""
+      expandedQuery: QueryRel, groups: Set[REG], tags: TagMap) {
+    val testQueryStr = testQuery.toString()
+    val expandedQueryStr = expandedQuery.toString()
     groups.foreach({ group =>
       val tuple = "(%s, %s, %s)".format(group.arg1.norm, group.rel.norm, group.arg2.norm)
       val tupleLinks = "SRL: %s; WordNet: %s; VerbNet: %s".format(
@@ -53,9 +81,11 @@ class RelationInferenceExperiment (solrUrl: String, inputDir: String, outputDir:
       )
       group.instances.foreach({ instance =>
         val sentence = instance.extraction.sentenceText
-        writer.write("%s\t%s\t%s\t%s\t%s\t%s\t%s".format(
-          name, testQuery, expandedQuery, tuple, tag, sentence, tupleLinks
-        ))
+        val tag = tags.getOrElse((testQueryStr, tuple, sentence), "")
+        val result = new RelationInferenceResult(
+          name, testQueryStr, expandedQueryStr, tuple, tag, sentence, tupleLinks
+        )
+        writer.write(result.toString())
         writer.newLine()
       })
     })
@@ -71,6 +101,7 @@ class RelationInferenceExperiment (solrUrl: String, inputDir: String, outputDir:
     val verbNetExpander = new VerbNetQueryExpander(VERBNET_PATH, WORDNET_PATH)
     val queryExpanders: Seq[QueryExpander] = List(baselineExpander, srlExpander, wordNetExpander, verbNetExpander)
     val benchmarkQueries = getTestQueries()
+    val tags = getTags(TAGS_PATH)
     
     val sentenceWriter = new BufferedWriter(new FileWriter(SENTENCES_PATH))
     queryExpanders.foreach({ expander =>
@@ -82,7 +113,7 @@ class RelationInferenceExperiment (solrUrl: String, inputDir: String, outputDir:
         } else {
           (runQuery(query), query.getQueryRel)
         }
-        outputSentences(sentenceWriter, systemName, benchmarkQuery, expansion, groups)
+        outputSentences(sentenceWriter, systemName, benchmarkQuery, expansion, groups, tags)
       })
     })
     sentenceWriter.close()
