@@ -26,11 +26,12 @@ object SrlRelationLinker extends RelationLinker {
         Interval.span(headPhrase.map(_.interval))
       )
     }
+    val firstVerb = headPhrase(0).string
     val text = sentence.map(_.string).mkString(" ")
     val graph = clearParser.dependencyGraph(text)
     val frames = clearSrl(graph)
     val frameIndex = frames.lastIndexWhere({ frame =>
-      interval.superset(frame.relation.node.tokenInterval)
+      firstVerb == frame.relation.node.text
     })
     if (frameIndex < 0) {
       Set.empty[String]

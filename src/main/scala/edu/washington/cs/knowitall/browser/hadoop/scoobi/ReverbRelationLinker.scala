@@ -46,7 +46,7 @@ object ReverbRelationLinker extends ScoobiApp {
     }
     (srlLink, wnLink, vnLinks)
   }
-  
+
   def linkRelations(inputGroups: DList[String]): DList[String] = {
     inputGroups.flatMap({ line =>
       val cleanLine = line.filterNot({c => c==0})
@@ -108,7 +108,6 @@ object ReverbRelationLinker extends ScoobiApp {
       }
     }
   }
-
 
   /**
    * Gathers inputs, launches the job, and persists the output.
