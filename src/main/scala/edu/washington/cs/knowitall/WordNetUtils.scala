@@ -45,6 +45,12 @@ class WordNetUtils(wordNetPath: String) {
     synsets.flatMap({synset => synset.getWords().asScala}).toSet
   }
   
+  def getHypernyms(word: IWord): Set[IWord] = {
+    val relatedSynsetIds = word.getSynset().getRelatedSynsets(Pointer.HYPERNYM).asScala
+    val synsets = relatedSynsetIds.map({ synsetId => wordNet.getSynset(synsetId) })
+    synsets.flatMap({synset => synset.getWords().asScala}).toSet
+  }
+  
   def getTagCount(word: IWord): Integer = {
     wordNet.getSenseEntry(word.getSenseKey()).getTagCount()
   }

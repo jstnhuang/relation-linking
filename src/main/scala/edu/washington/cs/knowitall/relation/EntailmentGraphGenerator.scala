@@ -98,9 +98,9 @@ class EntailmentGraphGenerator(vnToWnPath: String, wnToVnPath: String, wordNetPa
           synonym => (word, synonym)
         })
       })
-      val hyponyms = wordNetSenses.flatMap({ word =>
-        wordNetUtils.getHyponyms(word).map({
-          hyponym => (word, hyponym)
+      val hypernyms = wordNetSenses.flatMap({ word =>
+        wordNetUtils.getHypernyms(word).map({
+          hypernym => (word, hypernym)
         })
       })
       
@@ -134,28 +134,28 @@ class EntailmentGraphGenerator(vnToWnPath: String, wnToVnPath: String, wordNetPa
           case None =>
         }
       })
-      hyponyms.foreach({ case (word, hyponym) =>
-        wnToVn.get(hyponym) match {
-          case Some(vnHyponyms) => {
-            vnHyponyms.foreach({ vnHyponym =>
-              entailmentGraph.addEntailment(vnHyponym, verbNetSense);
+      hypernyms.foreach({ case (word, hypernym) =>
+        wnToVn.get(hypernym) match {
+          case Some(vnHypernyms) => {
+            vnHypernyms.foreach({ vnHypernym =>
+              entailmentGraph.addEntailment(verbNetSense, vnHypernym);
               traceWriter match {
                 case Some(writer) => {
                   val traceCol = List(
                     List(
-                      vnHyponym,
-                      wordNetUtils.wordToString(hyponym, tagCount=true)
+                      verbNetSense,
+                      wordNetUtils.wordToString(word, tagCount=true)
                     ).mkString(" = "),
                     List(
-                      wordNetUtils.wordToString(word, tagCount=true),
-                      verbNetSense
+                      wordNetUtils.wordToString(hypernym, tagCount=true),
+                      vnHypernym
                     ).mkString(" = ")
                   ).mkString(" => ")
                   val row = List(
-                    vnHyponym,
                     verbNetSense,
-                    vnHyponym.getGloss,
+                    vnHypernym,
                     verbNetSense.getGloss,
+                    vnHypernym.getGloss,
                     traceCol
                   ).mkString("\t")
                   writer.write(row)
