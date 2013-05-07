@@ -109,7 +109,6 @@ object ReverbRelationLinker extends ScoobiApp {
     }
   }
 
-
   /**
    * Gathers inputs, launches the job, and persists the output.
    */
