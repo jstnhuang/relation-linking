@@ -32,7 +32,7 @@ class WordNetQueryExpander(wordNetPath: String) extends QueryExpander {
     }
     
     if (wordNetSenses.size == 0) {
-      System.err.println("No entailed WordNet senses for " + queryRel.rel.getOrElse("(None)"))
+      System.err.println("No WordNet senses for " + queryRel.rel.getOrElse("(None)"))
       null
     } else {
       val entailedSenses = wordNetSenses.flatMap { sense =>
