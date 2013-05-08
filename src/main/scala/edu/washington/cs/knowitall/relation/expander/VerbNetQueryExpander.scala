@@ -10,12 +10,14 @@ import scala.collection.JavaConverters._
 import edu.washington.cs.knowitall.relation.linker.VerbNetRelationLinker
 import edu.washington.cs.knowitall.db.DerbyHandler
 import edu.washington.cs.knowitall.relation.Constants
+import edu.washington.cs.knowitall.relation.linker.WordNetRelationLinker
 
 /**
  * Expands the relation phrase of a query based on its VerbNet sense.
  */
-class VerbNetQueryExpander(verbNetDbPath: String, wordNetPath: String) extends QueryExpander {
-  val verbNetLinker = new VerbNetRelationLinker(verbNetDbPath, wordNetPath)
+class VerbNetQueryExpander(verbNetDbPath: String, wordNetLinker: WordNetRelationLinker)
+    extends QueryExpander {
+  val verbNetLinker = new VerbNetRelationLinker(verbNetDbPath, wordNetLinker)
   val derbyHandler = new DerbyHandler(verbNetDbPath)
   
   override def getName(): String = "VerbNet"

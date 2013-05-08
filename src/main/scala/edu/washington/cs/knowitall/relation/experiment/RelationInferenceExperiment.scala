@@ -98,7 +98,8 @@ class RelationInferenceExperiment(solrUrl: String, inputDir: String, outputDir: 
     val baselineExpander = BaselineQueryExpander
     val srlExpander = SrlQueryExpander
     val wordNetExpander = new WordNetQueryExpander(WORDNET_PATH)
-    val verbNetExpander = new VerbNetQueryExpander(VERBNET_PATH, WORDNET_PATH)
+    val wordNetLinker = wordNetExpander.getWordNetLinker()
+    val verbNetExpander = new VerbNetQueryExpander(VERBNET_PATH, wordNetLinker)
     val queryExpanders: Seq[QueryExpander] = List(
       baselineExpander, srlExpander, wordNetExpander, verbNetExpander
     )

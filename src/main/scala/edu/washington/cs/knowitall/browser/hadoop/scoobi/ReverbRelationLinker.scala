@@ -21,12 +21,12 @@ import edu.knowitall.collection.immutable.Interval
  * sense.
  */
 object ReverbRelationLinker extends ScoobiApp {
-  val BASE_PATH = "/scratch2/rlinking/" // Hard-coded for now, scoobi is weird.
+  val BASE_PATH = "/scratch2/rlinking/"
   val WORDNET_PATH = Constants.wordNetPath(BASE_PATH)
   val VERBNET_PATH = Constants.verbNetDbPath(BASE_PATH)
   val srlLinker = SrlRelationLinker
   val wnLinker = new WordNetRelationLinker(WORDNET_PATH)
-  val vnLinker = new VerbNetRelationLinker(VERBNET_PATH, WORDNET_PATH)
+  val vnLinker = new VerbNetRelationLinker(VERBNET_PATH, wnLinker)
   
   def getLinks(phrase: Seq[PostaggedToken], context: Option[(Seq[PostaggedToken], Interval)]):
       (Option[String], Option[String], Set[String]) = {
@@ -48,7 +48,7 @@ object ReverbRelationLinker extends ScoobiApp {
   }
 
   def linkRelations(inputGroups: DList[String]): DList[String] = {
-    inputGroups.flatMap({ line =>
+    val result = inputGroups.flatMap({ line =>
       val cleanLine = line.filterNot({c => c==0})
       ReVerbExtractionGroup.deserializeFromString(cleanLine) match {
         case Some(group) => {
@@ -107,6 +107,7 @@ object ReverbRelationLinker extends ScoobiApp {
         key + "\t" + instances
       }
     }
+    result
   }
 
   /**

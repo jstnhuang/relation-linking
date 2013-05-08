@@ -14,7 +14,7 @@ import edu.knowitall.collection.immutable.Interval
  * you must have the Derby tables in basePath (the db must be named the same as Constants.VNTABLES).
  * You also need to have WordNet in basePath.
  */
-class VerbNetRelationLinker(verbNetDbPath: String, wordNetPath: String)
+class VerbNetRelationLinker(verbNetDbPath: String, wordNetLinker: WordNetRelationLinker)
     extends RelationLinker {
   val derbyHandler = new DerbyHandler(verbNetDbPath)
   
@@ -26,8 +26,8 @@ class VerbNetRelationLinker(verbNetDbPath: String, wordNetPath: String)
   def getRelationLinks(
       phrase: Seq[PostaggedToken],
       context: Option[(Seq[PostaggedToken], Interval)] = None): Set[String] = {
-    val wordNetLinker = new WordNetRelationLinker(wordNetPath)
     val wordNetSenses = wordNetLinker.getRelationLinks(phrase)
+    
     var relationLinks = Set[String]()
     if (wordNetSenses.size == 0) {
       relationLinks

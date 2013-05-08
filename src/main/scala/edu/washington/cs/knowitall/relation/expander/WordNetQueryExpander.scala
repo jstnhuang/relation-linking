@@ -47,4 +47,8 @@ class WordNetQueryExpander(wordNetPath: String) extends QueryExpander {
       )
     }
   }
+  
+  def getWordNetLinker(): WordNetRelationLinker = {
+    wordNetLinker
+  }
 }

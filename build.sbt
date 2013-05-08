@@ -10,7 +10,7 @@ crossScalaVersions := Seq("2.10.0", "2.9.2")
 
 libraryDependencies ++= Seq(
   "edu.mit" % "jwi" % "2.2.3",
-  "com.nicta" %% "scoobi" % "0.5.0-cdh3",
+  "com.nicta" %% "scoobi" % "0.6.0-cdh3",
   "com.github.scopt" %% "scopt" % "2.1.0",
   "edu.washington.cs.knowitall.openie" % "openie-models_2.9.3" % "1.0.0-SNAPSHOT",
   "edu.washington.cs.knowitall.nlptools" %% "nlptools-srl-clear" % "2.4.1",
