@@ -1,17 +1,15 @@
 package edu.washington.cs.knowitall.relation.experiment
 
-import java.io.BufferedWriter
+import java.io.{BufferedWriter, File, FileWriter}
+
 import scala.io.Source
+
 import edu.knowitall.openie.models.{ExtractionGroup, ReVerbExtraction}
 import edu.washington.cs.knowitall.SolrQueryExecutor
-import edu.washington.cs.knowitall.model.OpenIeQuery
-import edu.washington.cs.knowitall.relation.expander.{BaselineQueryExpander, QueryExpander, SrlQueryExpander, VerbNetQueryExpander}
-import scopt.OptionParser
-import java.io.FileWriter
-import java.io.File
+import edu.washington.cs.knowitall.model.{OpenIeQuery, QueryRel}
 import edu.washington.cs.knowitall.relation.Constants
-import edu.washington.cs.knowitall.relation.expander.WordNetQueryExpander
-import edu.washington.cs.knowitall.model.QueryRel
+import edu.washington.cs.knowitall.relation.expander.{BaselineQueryExpander, QueryExpander, SrlQueryExpander, VerbNetQueryExpander, WordNetQueryExpander}
+import scopt.OptionParser
 
 class RelationInferenceExperiment(solrUrl: String, inputDir: String, outputDir: String) {
   val solrExecutor = new SolrQueryExecutor(solrUrl)
