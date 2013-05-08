@@ -53,8 +53,4 @@ class WordNetRelationLinker(wordNetPath: String)
     val wordNetSenses = getWordRelationLinks(phrase, context)
     wordNetSenses.map(wordNetUtils.wordToString(_))
   }
-  
-  def close(): Unit = {
-    wordNetUtils.close()
-  }
 }
