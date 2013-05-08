@@ -41,9 +41,9 @@ class VerbNetQueryExpander(verbNetDbPath: String, wordNetLinker: WordNetRelation
       System.err.println("No entailed VerbNet senses for " + queryRel.rel.getOrElse("(None)"))
       null
     } else {
-      // Find all entailed VerbNet senses.
+      // Find all entailing VerbNet senses.
       val queryString = (
-        "SELECT vn2 FROM vn_to_vn WHERE vn1 IN ("
+        "SELECT vn1 FROM vn_to_vn WHERE vn2 IN ("
         + verbNetSenses.toSeq.map(_ => "?").mkString(", ") + ")"
       )
       val selectStatement = derbyHandler.prepareStatement(queryString)
