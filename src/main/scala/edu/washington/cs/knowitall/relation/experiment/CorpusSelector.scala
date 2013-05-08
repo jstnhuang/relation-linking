@@ -9,6 +9,9 @@ import edu.washington.cs.knowitall.SolrQueryExecutor
 import edu.washington.cs.knowitall.model.{OpenIeQuery, QueryArg, QueryRel}
 import scopt.OptionParser
 
+/**
+ * Retrieves a subset of ReverbExtractionGroups by querying Solr, and writes them out to a file.
+ */
 class CorpusSelector(solrUrl: String, inputDir: String, outputDir: String) {
   val solrExecutor = new SolrQueryExecutor(solrUrl)
   val BENCHMARK_QUERIES_PATH = List(inputDir, "benchmark-queries.tsv").mkString(File.separator)
@@ -32,8 +35,7 @@ class CorpusSelector(solrUrl: String, inputDir: String, outputDir: String) {
   }
   
   /**
-   * Output lines of the form: system name, benchmark query, expanded query, tuple, tag, sentence,
-   * tuple links.
+   * Output ReverbExtractionGroups found.
    */
   def outputGroups(writer: BufferedWriter, groups: Set[REG]): Unit = {
     groups.foreach({ group =>
