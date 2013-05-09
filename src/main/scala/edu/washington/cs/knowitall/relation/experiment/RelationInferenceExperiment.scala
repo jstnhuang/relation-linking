@@ -1,15 +1,14 @@
 package edu.washington.cs.knowitall.relation.experiment
 
 import java.io.{BufferedWriter, File, FileWriter}
-
 import scala.io.Source
-
 import edu.knowitall.openie.models.{ExtractionGroup, ReVerbExtraction}
 import edu.washington.cs.knowitall.SolrQueryExecutor
 import edu.washington.cs.knowitall.model.{OpenIeQuery, QueryRel}
 import edu.washington.cs.knowitall.relation.Constants
 import edu.washington.cs.knowitall.relation.expander.{BaselineQueryExpander, QueryExpander, SrlQueryExpander, VerbNetQueryExpander, WordNetQueryExpander}
 import scopt.OptionParser
+import edu.washington.cs.knowitall.WordNetUtils
 
 class RelationInferenceExperiment(solrUrl: String, inputDir: String, outputDir: String) {
   val solrExecutor = new SolrQueryExecutor(solrUrl)
@@ -95,9 +94,9 @@ class RelationInferenceExperiment(solrUrl: String, inputDir: String, outputDir: 
   def run(): Unit = {
     val baselineExpander = BaselineQueryExpander
     val srlExpander = SrlQueryExpander
-    val wordNetExpander = new WordNetQueryExpander(WORDNET_PATH)
-    val wordNetLinker = wordNetExpander.getWordNetLinker()
-    val verbNetExpander = new VerbNetQueryExpander(VERBNET_PATH, wordNetLinker)
+    val wordNetUtils = new WordNetUtils(WORDNET_PATH)
+    val wordNetExpander = new WordNetQueryExpander(wordNetUtils)
+    val verbNetExpander = new VerbNetQueryExpander(VERBNET_PATH, wordNetUtils)
     val queryExpanders: Seq[QueryExpander] = List(
       baselineExpander, srlExpander, wordNetExpander, verbNetExpander
     )

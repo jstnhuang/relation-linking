@@ -18,10 +18,8 @@ import edu.mit.jwi.item.IWord
  * Links verb phrases to WordNet senses. Currently just links to the most frequent WordNet sense of
  * a phrase/word.
  */
-class WordNetRelationLinker(wordNetPath: String)
+class WordNetRelationLinker(wordNetUtils: WordNetUtils)
     extends RelationLinker {
-  val wordNetUtils = new WordNetUtils(wordNetPath)
-  
   /**
    * Same as getRelationLinks, but returns IWords instead of Strings.
    */

@@ -1,12 +1,9 @@
 package edu.washington.cs.knowitall.relation.linker
 
-import edu.washington.cs.knowitall.relation.Constants
-import java.sql.SQLException
-import java.sql.Connection
-import java.sql.DriverManager
-import edu.washington.cs.knowitall.db.DerbyHandler
-import edu.knowitall.tool.postag.PostaggedToken
 import edu.knowitall.collection.immutable.Interval
+import edu.knowitall.tool.postag.PostaggedToken
+import edu.washington.cs.knowitall.WordNetUtils
+import edu.washington.cs.knowitall.db.DerbyHandler
 
 /**
  * Links a phrase to a set of VerbNet senses. It first uses the WordNet linker to get the WordNet
@@ -14,9 +11,10 @@ import edu.knowitall.collection.immutable.Interval
  * you must have the Derby tables in basePath (the db must be named the same as Constants.VNTABLES).
  * You also need to have WordNet in basePath.
  */
-class VerbNetRelationLinker(verbNetDbPath: String, wordNetLinker: WordNetRelationLinker)
+class VerbNetRelationLinker(verbNetDbPath: String, wordNetUtils: WordNetUtils)
     extends RelationLinker {
   val derbyHandler = new DerbyHandler(verbNetDbPath)
+  val wordNetLinker = new WordNetRelationLinker(wordNetUtils)
   
   /**
    * Gets the VerbNet senses associated with the given phrase. It uses the WordNet linker to link
@@ -27,6 +25,8 @@ class VerbNetRelationLinker(verbNetDbPath: String, wordNetLinker: WordNetRelatio
       phrase: Seq[PostaggedToken],
       context: Option[(Seq[PostaggedToken], Interval)] = None): Set[String] = {
     val wordNetSenses = wordNetLinker.getRelationLinks(phrase)
+    
+    // TODO: get synonyms, fall back on hypernyms
     
     var relationLinks = Set[String]()
     if (wordNetSenses.size == 0) {

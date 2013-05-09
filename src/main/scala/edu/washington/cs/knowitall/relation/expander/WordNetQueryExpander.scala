@@ -11,9 +11,8 @@ import edu.washington.cs.knowitall.model.QueryArg
 /**
  * Expands the relation phrase of a query based on its WordNet sense.
  */
-class WordNetQueryExpander(wordNetPath: String) extends QueryExpander {
-  val wordNetUtils = new WordNetUtils(wordNetPath)
-  val wordNetLinker = new WordNetRelationLinker(wordNetPath)
+class WordNetQueryExpander(wordNetUtils: WordNetUtils) extends QueryExpander {
+  val wordNetLinker = new WordNetRelationLinker(wordNetUtils)
   
   def getName(): String = "WordNet"
 
@@ -46,9 +45,5 @@ class WordNetQueryExpander(wordNetPath: String) extends QueryExpander {
         queryArg2
       )
     }
-  }
-  
-  def getWordNetLinker(): WordNetRelationLinker = {
-    wordNetLinker
   }
 }

@@ -11,13 +11,14 @@ import edu.washington.cs.knowitall.relation.linker.VerbNetRelationLinker
 import edu.washington.cs.knowitall.db.DerbyHandler
 import edu.washington.cs.knowitall.relation.Constants
 import edu.washington.cs.knowitall.relation.linker.WordNetRelationLinker
+import edu.washington.cs.knowitall.WordNetUtils
 
 /**
  * Expands the relation phrase of a query based on its VerbNet sense.
  */
-class VerbNetQueryExpander(verbNetDbPath: String, wordNetLinker: WordNetRelationLinker)
+class VerbNetQueryExpander(verbNetDbPath: String, wordNetUtils: WordNetUtils)
     extends QueryExpander {
-  val verbNetLinker = new VerbNetRelationLinker(verbNetDbPath, wordNetLinker)
+  val verbNetLinker = new VerbNetRelationLinker(verbNetDbPath, wordNetUtils)
   val derbyHandler = new DerbyHandler(verbNetDbPath)
   
   override def getName(): String = "VerbNet"
