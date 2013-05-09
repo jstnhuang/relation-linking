@@ -24,21 +24,23 @@ class VerbNetRelationLinker(verbNetDbPath: String, wordNetUtils: WordNetUtils)
   def getRelationLinks(
       phrase: Seq[PostaggedToken],
       context: Option[(Seq[PostaggedToken], Interval)] = None): Set[String] = {
-    val wordNetSenses = wordNetLinker.getRelationLinks(phrase)
+    val wordNetSenses = wordNetLinker.getWordRelationLinks(phrase)
     
-    // TODO: get synonyms, fall back on hypernyms
+    val synonyms = wordNetSenses.flatMap(wordNetUtils.getSynonyms(_))
+    val hyponyms = wordNetSenses.flatMap(wordNetUtils.getHyponyms(_))
+    val senses = (synonyms ++ hyponyms).map(wordNetUtils.wordToString(_))
     
     var relationLinks = Set[String]()
-    if (wordNetSenses.size == 0) {
+    if (senses.size == 0) {
       relationLinks
     } else {
       val selectStatement = derbyHandler.prepareStatement(
         "SELECT vn FROM wn_to_vn WHERE wn IN ("
-        + wordNetSenses.toSeq.map(_ => "?").mkString(", ") + ")"
+        + senses.toSeq.map(_ => "?").mkString(", ") + ")"
       )
       var index = 1;
-      wordNetSenses.foreach({ wordNetSense =>
-        selectStatement.setString(index, wordNetSense)
+      senses.foreach({ sense =>
+        selectStatement.setString(index, sense)
         index += 1
       })
       
