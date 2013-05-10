@@ -11,7 +11,7 @@ class RelationInferenceResult(systemName: String, testQuery: String, expandedQue
     ).filterNot(_ == '"')
   }
 
-  def getTagKey() = (testQuery, tuple, sentence)
+  def getTagKey() = (testQuery, tuple)
   def getTag() = tag
 }
 

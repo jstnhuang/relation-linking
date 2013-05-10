@@ -18,7 +18,7 @@ class RelationInferenceExperiment(solrUrl: String, inputDir: String, outputDir: 
   val TAGS_PATH = List(inputDir, "tags").mkString(File.separator)
   val SENTENCES_PATH = List(outputDir, "sentences.tsv").mkString(File.separator)
   type REG = ExtractionGroup[ReVerbExtraction];
-  type TagMap = scala.collection.mutable.Map[(String, String, String), String];
+  type TagMap = scala.collection.mutable.Map[(String, String), String];
   
   /**
    * Reads test queries from input file.
@@ -37,7 +37,7 @@ class RelationInferenceExperiment(solrUrl: String, inputDir: String, outputDir: 
    */
   def getTags(tagDir: String): TagMap = {
     val files = new File(tagDir).listFiles.filter(_.getName.endsWith(".tsv"))
-    var tags: TagMap = scala.collection.mutable.Map.empty[(String, String, String), String]
+    var tags: TagMap = scala.collection.mutable.Map.empty[(String, String), String]
     files.foreach({ file =>
       Source.fromFile(file).getLines().foreach({ line =>
         val result = RelationInferenceResult.fromString(line.trim())
@@ -79,7 +79,7 @@ class RelationInferenceExperiment(solrUrl: String, inputDir: String, outputDir: 
       
       // Only get one sentence for now.
       val sentence = group.instances.head.extraction.sentenceText.trim()
-      val tag = tags.getOrElse((testQueryStr, tuple, sentence), "")
+      val tag = tags.getOrElse((testQueryStr, tuple), "")
       val result = new RelationInferenceResult(
         name, testQueryStr, expandedQueryStr, tuple, tag, sentence, tupleLinks
       )
