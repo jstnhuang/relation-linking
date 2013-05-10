@@ -76,15 +76,15 @@ class RelationInferenceExperiment(solrUrl: String, inputDir: String, outputDir: 
         group.rel.wnLink.getOrElse("X"),
         if (group.rel.vnLinks.isEmpty) { "X" } else { group.rel.vnLinks.mkString(", ") } 
       )
-      group.instances.foreach({ instance =>
-        val sentence = instance.extraction.sentenceText.filterNot(_ == '"').trim()
-        val tag = tags.getOrElse((testQueryStr, tuple, sentence), "")
-        val result = new RelationInferenceResult(
-          name, testQueryStr, expandedQueryStr, tuple, tag, sentence, tupleLinks
-        )
-        writer.write(result.toString())
-        writer.newLine()
-      })
+      
+      // Only get one sentence for now.
+      val sentence = group.instances.head.extraction.sentenceText.trim()
+      val tag = tags.getOrElse((testQueryStr, tuple, sentence), "")
+      val result = new RelationInferenceResult(
+        name, testQueryStr, expandedQueryStr, tuple, tag, sentence, tupleLinks
+      )
+      writer.write(result.toString())
+      writer.newLine()
     })
   }
   
