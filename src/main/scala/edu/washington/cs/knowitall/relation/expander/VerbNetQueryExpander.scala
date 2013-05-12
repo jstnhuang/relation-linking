@@ -27,10 +27,11 @@ class VerbNetQueryExpander(verbNetDbPath: String, wordNetUtils: WordNetUtils)
     val queryArg1 = QueryArg.fromString(rawQuery.arg1.getOrElse(""))
     val queryRel = QueryRel.fromString(rawQuery.rel.getOrElse(""))
     val queryArg2 = QueryArg.fromString(rawQuery.arg2.getOrElse(""))
-    val (arg1Tags, relTags, arg2Tags) = tagQuery(queryArg1, queryRel, queryArg2)
+    val (arg1Tags, relTags, arg2Tags) = QueryExpander.tagQuery(queryArg1, queryRel, queryArg2)
     
     // Find VerbNet senses for this query.
     val verbNetSenses = verbNetLinker.getRelationLinks(relTags)
+    
     val preps = RelationPhraseFinder.getPrepositions(relTags)
     val relPreps = if (!preps.isEmpty) {
       Some(relTags.map(_.string).mkString(" "))

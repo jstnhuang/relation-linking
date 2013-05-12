@@ -20,7 +20,7 @@ class WordNetQueryExpander(wordNetUtils: WordNetUtils) extends QueryExpander {
     val queryArg1 = QueryArg.fromString(rawQuery.arg1.getOrElse(""))
     val queryRel = QueryRel.fromString(rawQuery.rel.getOrElse(""))
     val queryArg2 = QueryArg.fromString(rawQuery.arg2.getOrElse(""))
-    val (arg1Tags, relTags, arg2Tags) = tagQuery(queryArg1, queryRel, queryArg2)
+    val (arg1Tags, relTags, arg2Tags) = QueryExpander.tagQuery(queryArg1, queryRel, queryArg2)
     
     val wordNetSenses = wordNetLinker.getWordRelationLinks(relTags)
     val preps = RelationPhraseFinder.getPrepositions(relTags)

@@ -27,8 +27,8 @@ class VerbNetRelationLinker(verbNetDbPath: String, wordNetUtils: WordNetUtils)
     val wordNetSenses = wordNetLinker.getWordRelationLinks(phrase)
     
     val synonyms = wordNetSenses.flatMap(wordNetUtils.getSynonyms(_))
-    val hyponyms = wordNetSenses.flatMap(wordNetUtils.getHyponyms(_))
-    val senses = (synonyms ++ hyponyms).map(wordNetUtils.wordToString(_))
+    val hypernyms = wordNetSenses.flatMap(wordNetUtils.getHypernyms(_))
+    val senses = (synonyms ++ hypernyms).map(wordNetUtils.wordToString(_))
     
     var relationLinks = Set[String]()
     if (senses.size == 0) {

@@ -7,7 +7,7 @@ import edu.knowitall.tool.postag.OpenNlpPostagger
 import edu.knowitall.tool.tokenize.OpenNlpTokenizer
 import edu.knowitall.tool.tokenize.Token
 
-trait QueryExpander {
+abstract class QueryExpander {
   /**
    * The name of this query expansion system.
    */
@@ -17,7 +17,9 @@ trait QueryExpander {
    * Expand the given query, or return null if the query can't be expanded for some reason. 
    */
   def expandQuery(rawQuery: BenchmarkQuery): OpenIeQuery
-  
+}
+
+object QueryExpander {
   val tokenizer = new OpenNlpTokenizer()
   val tagger = new OpenNlpPostagger()
   

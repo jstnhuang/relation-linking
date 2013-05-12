@@ -18,7 +18,7 @@ object SrlQueryExpander extends QueryExpander {
     val queryArg1 = QueryArg.fromString(rawQuery.arg1.getOrElse(""))
     val queryRel = QueryRel.fromString(rawQuery.rel.getOrElse(""))
     val queryArg2 = QueryArg.fromString(rawQuery.arg2.getOrElse(""))
-    val (arg1Tags, relTags, arg2Tags) = tagQuery(queryArg1, queryRel, queryArg2)
+    val (arg1Tags, relTags, arg2Tags) = QueryExpander.tagQuery(queryArg1, queryRel, queryArg2)
     val sentence = arg1Tags ++ relTags ++ arg2Tags
     val relInterval = Interval.span(relTags.map(_.interval))
     val srlLinks = SrlRelationLinker.getRelationLinks(relTags, Some((sentence, relInterval)))
