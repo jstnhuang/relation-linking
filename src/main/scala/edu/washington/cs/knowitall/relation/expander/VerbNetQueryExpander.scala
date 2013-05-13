@@ -1,6 +1,7 @@
 package edu.washington.cs.knowitall.relation.expander
 
 import edu.washington.cs.knowitall.relation.RelationPhraseFinder
+
 import edu.washington.cs.knowitall.relation.experiment.BenchmarkQuery
 import edu.washington.cs.knowitall.model.OpenIeQuery
 import edu.knowitall.tool.tokenize.OpenNlpTokenizer
@@ -12,13 +13,14 @@ import edu.washington.cs.knowitall.db.DerbyHandler
 import edu.washington.cs.knowitall.relation.Constants
 import edu.washington.cs.knowitall.relation.linker.WordNetRelationLinker
 import edu.washington.cs.knowitall.WordNetUtils
+import edu.washington.cs.knowitall.relation.linker.EntailmentDirection._
 
 /**
  * Expands the relation phrase of a query based on its VerbNet sense.
  */
 class VerbNetQueryExpander(verbNetDbPath: String, wordNetUtils: WordNetUtils)
     extends QueryExpander {
-  val verbNetLinker = new VerbNetRelationLinker(verbNetDbPath, wordNetUtils)
+  val verbNetLinker = new VerbNetRelationLinker(verbNetDbPath, wordNetUtils, Troponym)
   val derbyHandler = new DerbyHandler(verbNetDbPath)
   
   override def getName(): String = "VerbNet"

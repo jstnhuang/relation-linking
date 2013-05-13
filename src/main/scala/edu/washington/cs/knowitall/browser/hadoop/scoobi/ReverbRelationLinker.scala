@@ -16,6 +16,7 @@ import edu.washington.cs.knowitall.db.DerbyHandler
 import edu.washington.cs.knowitall.relation.Constants
 import edu.knowitall.collection.immutable.Interval
 import edu.washington.cs.knowitall.WordNetUtils
+import edu.washington.cs.knowitall.relation.linker.EntailmentDirection._
 
 /**
  * Hadoop job that links a Reverb extraction group to its SRL sense, WordNet sense, and VerbNet
@@ -28,7 +29,7 @@ object ReverbRelationLinker extends ScoobiApp {
   val srlLinker = SrlRelationLinker
   val wordNetUtils = new WordNetUtils(WORDNET_PATH)
   val wnLinker = new WordNetRelationLinker(wordNetUtils)
-  val vnLinker = new VerbNetRelationLinker(VERBNET_PATH, wordNetUtils)
+  val vnLinker = new VerbNetRelationLinker(VERBNET_PATH, wordNetUtils, Hypernym)
   
   def getLinks(phrase: Seq[PostaggedToken], context: Option[(Seq[PostaggedToken], Interval)]):
       (Option[String], Option[String], Set[String]) = {

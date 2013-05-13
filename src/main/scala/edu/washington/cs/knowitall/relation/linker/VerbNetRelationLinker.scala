@@ -4,6 +4,7 @@ import edu.knowitall.collection.immutable.Interval
 import edu.knowitall.tool.postag.PostaggedToken
 import edu.washington.cs.knowitall.WordNetUtils
 import edu.washington.cs.knowitall.db.DerbyHandler
+import edu.washington.cs.knowitall.relation.linker.EntailmentDirection._
 
 /**
  * Links a phrase to a set of VerbNet senses. It first uses the WordNet linker to get the WordNet
@@ -11,8 +12,8 @@ import edu.washington.cs.knowitall.db.DerbyHandler
  * you must have the Derby tables in basePath (the db must be named the same as Constants.VNTABLES).
  * You also need to have WordNet in basePath.
  */
-class VerbNetRelationLinker(verbNetDbPath: String, wordNetUtils: WordNetUtils)
-    extends RelationLinker {
+class VerbNetRelationLinker(verbNetDbPath: String, wordNetUtils: WordNetUtils,
+    direction: EntailmentDirection) extends RelationLinker {
   val derbyHandler = new DerbyHandler(verbNetDbPath)
   val wordNetLinker = new WordNetRelationLinker(wordNetUtils)
   
@@ -27,8 +28,16 @@ class VerbNetRelationLinker(verbNetDbPath: String, wordNetUtils: WordNetUtils)
     val wordNetSenses = wordNetLinker.getWordRelationLinks(phrase)
     
     val synonyms = wordNetSenses.flatMap(wordNetUtils.getSynonyms(_))
-    val hypernyms = wordNetSenses.flatMap(wordNetUtils.getHypernyms(_))
-    val senses = (synonyms ++ hypernyms).map(wordNetUtils.wordToString(_))
+    val others = if (direction == Hypernym) {
+      wordNetSenses.flatMap(wordNetUtils.getHypernyms(_))
+    } else {
+      wordNetSenses.flatMap(wordNetUtils.getHyponyms(_))
+    }
+    val senses = if (!synonyms.isEmpty) {
+      synonyms
+    } else {
+      others
+    }
     
     var relationLinks = Set[String]()
     if (senses.size == 0) {
@@ -40,7 +49,7 @@ class VerbNetRelationLinker(verbNetDbPath: String, wordNetUtils: WordNetUtils)
       )
       var index = 1;
       senses.foreach({ sense =>
-        selectStatement.setString(index, sense)
+        selectStatement.setString(index, wordNetUtils.wordToString(sense))
         index += 1
       })
       
