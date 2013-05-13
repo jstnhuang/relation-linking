@@ -16,7 +16,8 @@ class ExpansionTracer(inputDir: String, outputDir: String) {
   val WORDNET_PATH = Constants.wordNetPath(inputDir)
   val VERBNET_PATH = Constants.verbNetDbPath(inputDir)
   val BENCHMARK_QUERIES_PATH = List(inputDir, "benchmark-queries.tsv").mkString(File.separator)
-  val TRACE_PATH = List(outputDir, "trace-hypernyms.tsv").mkString(File.separator)
+  val TRACE_QUERY_EXP_PATH = List(outputDir, "trace-query-exp.tsv").mkString(File.separator)
+  val TRACE_LINK_PATH = List(outputDir, "trace-linker.tsv").mkString(File.separator)
   type REG = ExtractionGroup[ReVerbExtraction];
   
   /**
@@ -40,21 +41,39 @@ class ExpansionTracer(inputDir: String, outputDir: String) {
     val verbNetExpander = new VerbNetQueryExpander(VERBNET_PATH, wordNetUtils)
     val benchmarkQueries = getTestQueries()
     
-    val traceWriter = new BufferedWriter(new FileWriter(TRACE_PATH))
+    val traceQueryExpWriter = new BufferedWriter(new FileWriter(TRACE_QUERY_EXP_PATH))
+    val traceLinkWriter = new BufferedWriter(new FileWriter(TRACE_LINK_PATH))
     benchmarkQueries.foreach({ benchmarkQuery =>
-      // Expand query
       val queryArg1 = QueryArg.fromString(benchmarkQuery.arg1.getOrElse(""))
       val queryRel = QueryRel.fromString(benchmarkQuery.rel.getOrElse(""))
       val queryArg2 = QueryArg.fromString(benchmarkQuery.arg2.getOrElse(""))
       val (arg1Tags, relTags, arg2Tags) = QueryExpander.tagQuery(queryArg1, queryRel, queryArg2)
+      
+      // Link relation phrase to a WordNet sense
       val wordSenses = wordNetLinker.getWordRelationLinks(relTags)
       wordSenses.foreach({ wordSense =>
-        val synonyms = wordNetUtils.getHyponyms(wordSense)
-        synonyms.foreach({ synonym =>
+        // Get synonyms or troponyms of each WordNet sense
+        val synonyms = wordNetUtils.getSynonyms(wordSense)
+        val troponyms = wordNetUtils.getHyponyms(wordSense)
+        val hypernyms = wordNetUtils.getHypernyms(wordSense)
+        
+        val (querySense, synOrTro) = if (!synonyms.isEmpty) {
+          (synonyms, "synonym")
+        } else {
+          (troponyms, "troponym")
+        }
+        
+        val (tupleSenses, synOrHyp) = if (!synonyms.isEmpty) {
+          (synonyms, "synonym")
+        } else {
+          (hypernyms, "hypernym")
+        }
+        
+        querySense.foreach({ querySense =>
           val wnToVnStatement = derbyHandler.prepareStatement(
             "SELECT vn FROM wn_to_vn WHERE wn=?"
           )
-          wnToVnStatement.setString(1, wordNetUtils.wordToString(synonym))
+          wnToVnStatement.setString(1, wordNetUtils.wordToString(querySense))
           val wnToVnResults = derbyHandler.query(wnToVnStatement)
           while (wnToVnResults.next()) {
             val verbNetSense = wnToVnResults.getString(1)
@@ -67,19 +86,39 @@ class ExpansionTracer(inputDir: String, outputDir: String) {
               val entailingVerbNetSense = vnToVnResults.getString(1)
               val line = List(
                 queryRel,
-                wordNetUtils.wordToString(wordSense),
-                wordNetUtils.wordToString(synonym),
+                wordNetUtils.wordToString(wordSense, true, true),
+                "%s (%s)".format(wordNetUtils.wordToString(querySense, true, true), synOrTro),
                 verbNetSense,
                 entailingVerbNetSense
               ).mkString("\t")
-              traceWriter.write(line)
-              traceWriter.newLine()
+              traceQueryExpWriter.write(line)
+              traceQueryExpWriter.newLine()
             }
+          }
+        })
+        
+        tupleSenses.foreach({ tupleSense =>
+          val wnToVnStatement = derbyHandler.prepareStatement(
+            "SELECT vn FROM wn_to_vn WHERE wn=?"
+          )
+          wnToVnStatement.setString(1, wordNetUtils.wordToString(tupleSense))
+          val wnToVnResults = derbyHandler.query(wnToVnStatement)
+          while (wnToVnResults.next()) {
+            val verbNetSense = wnToVnResults.getString(1)
+            val line = List(
+              queryRel,
+              wordNetUtils.wordToString(wordSense, true, true),
+              "%s (%s)".format(wordNetUtils.wordToString(tupleSense, true, true), synOrHyp),
+              verbNetSense
+            ).mkString("\t")
+            traceLinkWriter.write(line)
+            traceLinkWriter.newLine()
           }
         })
       })
     })
-    traceWriter.close()
+    traceQueryExpWriter.close()
+    traceLinkWriter.close()
   }
 }
 
