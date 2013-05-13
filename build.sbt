@@ -1,3 +1,7 @@
+import AssemblyKeys._
+
+assemblySettings
+
 organization := "edu.washington.cs.knowitall"
 
 name := "relation-linking"
@@ -29,3 +33,13 @@ resolvers ++= Seq(
   "nicta" at "http://nicta.github.com/scoobi/releases",
   "cloudera" at "https://repository.cloudera.com/content/repositories/releases"
 )
+
+mainClass in assembly := Some("edu.washington.cs.knowitall.browser.hadoop.scoobi.ReverbRelationLinker")
+
+mergeStrategy in assembly <<= (mergeStrategy in assembly) { (old) =>
+  {
+    case PathList("javax", "servlet", xs @ _*) => MergeStrategy.first
+    case PathList("org", "xmlpull", xs @ _*) => MergeStrategy.first
+    case x => old(x)
+  }
+}
