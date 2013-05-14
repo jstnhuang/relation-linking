@@ -6,14 +6,14 @@ import edu.knowitall.openie.models.{ExtractionGroup, ReVerbExtraction}
 import edu.washington.cs.knowitall.SolrQueryExecutor
 import edu.washington.cs.knowitall.model.{OpenIeQuery, QueryRel}
 import edu.washington.cs.knowitall.relation.Constants
-import edu.washington.cs.knowitall.relation.expander.{BaselineQueryExpander, QueryExpander, SrlQueryExpander, VerbNetQueryExpander, WordNetQueryExpander}
+import edu.washington.cs.knowitall.relation.expander.{BaselineQueryExpander, CleanQueryExpander, QueryExpander, SrlQueryExpander, VerbNetQueryExpander, WordNetQueryExpander}
 import scopt.OptionParser
 import edu.washington.cs.knowitall.WordNetUtils
 
 class RelationInferenceExperiment(solrUrl: String, inputDir: String, outputDir: String) {
   val solrExecutor = new SolrQueryExecutor(solrUrl)
   val WORDNET_PATH = Constants.wordNetPath(inputDir)
-  val VERBNET_PATH = Constants.relationLinkingDbPath(inputDir)
+  val RELATION_DB_PATH = Constants.relationLinkingDbPath(inputDir)
   val BENCHMARK_QUERIES_PATH = List(inputDir, "benchmark-queries.tsv").mkString(File.separator)
   val TAGS_PATH = List(inputDir, "tags").mkString(File.separator)
   val SENTENCES_PATH = List(outputDir, "sentences.tsv").mkString(File.separator)
@@ -96,9 +96,10 @@ class RelationInferenceExperiment(solrUrl: String, inputDir: String, outputDir: 
     val srlExpander = SrlQueryExpander
     val wordNetUtils = new WordNetUtils(WORDNET_PATH)
     val wordNetExpander = new WordNetQueryExpander(wordNetUtils)
-    val verbNetExpander = new VerbNetQueryExpander(VERBNET_PATH, wordNetUtils)
+    val verbNetExpander = new VerbNetQueryExpander(RELATION_DB_PATH, wordNetUtils)
+    val cleanExpander = new CleanQueryExpander(RELATION_DB_PATH)
     val queryExpanders: Seq[QueryExpander] = List(
-      baselineExpander, srlExpander, wordNetExpander, verbNetExpander
+      baselineExpander, srlExpander, wordNetExpander, verbNetExpander, cleanExpander
     )
     val benchmarkQueries = getTestQueries()
     val tags = getTags(TAGS_PATH)
