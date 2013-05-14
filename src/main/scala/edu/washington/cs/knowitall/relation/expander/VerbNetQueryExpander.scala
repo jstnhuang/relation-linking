@@ -59,15 +59,15 @@ class VerbNetQueryExpander(verbNetDbPath: String, wordNetUtils: WordNetUtils)
       })
       
       val results = derbyHandler.query(selectStatement)
-      var entailedSenses = Set[String]()
+      var entailingSenses = Set[String]()
       while(results.next()) {
-        val entailedSense = results.getString(1)
-        entailedSenses += entailedSense
+        val entailingSense = results.getString(1)
+        entailingSenses += entailingSense
       }
       
       new OpenIeQuery(
         queryArg1,
-        new QueryRel(rels=relPreps, vnLinks=Some(entailedSenses)),
+        new QueryRel(rels=relPreps, vnLinks=Some(entailingSenses)),
         queryArg2
       )
     }
