@@ -14,7 +14,7 @@ import edu.washington.cs.knowitall.db.DerbyHandler
 
 class ExpansionTracer(inputDir: String, outputDir: String) {
   val WORDNET_PATH = Constants.wordNetPath(inputDir)
-  val VERBNET_PATH = Constants.verbNetDbPath(inputDir)
+  val VERBNET_PATH = Constants.relationLinkingDbPath(inputDir)
   val BENCHMARK_QUERIES_PATH = List(inputDir, "benchmark-queries.tsv").mkString(File.separator)
   val TRACE_QUERY_EXP_PATH = List(outputDir, "trace-query-exp.tsv").mkString(File.separator)
   val TRACE_LINK_PATH = List(outputDir, "trace-linker.tsv").mkString(File.separator)

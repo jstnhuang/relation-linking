@@ -13,7 +13,7 @@ import edu.washington.cs.knowitall.WordNetUtils
 class RelationInferenceExperiment(solrUrl: String, inputDir: String, outputDir: String) {
   val solrExecutor = new SolrQueryExecutor(solrUrl)
   val WORDNET_PATH = Constants.wordNetPath(inputDir)
-  val VERBNET_PATH = Constants.verbNetDbPath(inputDir)
+  val VERBNET_PATH = Constants.relationLinkingDbPath(inputDir)
   val BENCHMARK_QUERIES_PATH = List(inputDir, "benchmark-queries.tsv").mkString(File.separator)
   val TAGS_PATH = List(inputDir, "tags").mkString(File.separator)
   val SENTENCES_PATH = List(outputDir, "sentences.tsv").mkString(File.separator)

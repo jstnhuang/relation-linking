@@ -6,7 +6,7 @@ object Constants {
   def wordNetPath(baseDir: String): String = {
     List(baseDir, "WordNet-3.0", "dict").mkString(File.separator)
   }
-  def verbNetDbPath(baseDir: String): String = {
-    List("localhost:1527", baseDir, "vntables").mkString(File.separator)
+  def relationLinkingDbPath(baseDir: String): String = {
+    List("localhost:1527", baseDir, "relationlinking").mkString(File.separator)
   }
 }

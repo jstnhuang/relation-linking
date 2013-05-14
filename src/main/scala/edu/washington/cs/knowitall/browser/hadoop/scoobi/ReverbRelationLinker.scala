@@ -25,7 +25,7 @@ import edu.washington.cs.knowitall.relation.linker.EntailmentDirection._
 object ReverbRelationLinker extends ScoobiApp {
   val BASE_PATH = "/scratch2/rlinking/"
   val WORDNET_PATH = Constants.wordNetPath(BASE_PATH)
-  val VERBNET_PATH = Constants.verbNetDbPath(BASE_PATH)
+  val VERBNET_PATH = Constants.relationLinkingDbPath(BASE_PATH)
   val srlLinker = SrlRelationLinker
   val wordNetUtils = new WordNetUtils(WORDNET_PATH)
   val wnLinker = new WordNetRelationLinker(wordNetUtils)
