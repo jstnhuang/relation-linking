@@ -35,14 +35,14 @@ class WordNetQueryExpander(wordNetUtils: WordNetUtils) extends QueryExpander {
       System.err.println("No WordNet senses for " + queryRel.rels.getOrElse("(None)"))
       null
     } else {
-      val entailedSenses = wordNetSenses.flatMap { sense =>
+      val entailingSenses = wordNetSenses.flatMap { sense =>
         val synonyms = wordNetUtils.getSynonyms(sense)
         val hyponyms = wordNetUtils.getHyponyms(sense)
         synonyms ++ hyponyms
       }.map(wordNetUtils.wordToString(_))
       new OpenIeQuery(
         queryArg1,
-        new QueryRel(rels=relPreps, wnLinks=Some(entailedSenses)),
+        new QueryRel(rels=relPreps, wnLinks=Some(entailingSenses)),
         queryArg2
       )
     }
