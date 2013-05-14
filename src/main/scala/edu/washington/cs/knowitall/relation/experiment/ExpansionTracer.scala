@@ -47,7 +47,7 @@ class ExpansionTracer(inputDir: String, outputDir: String) {
       val queryArg1 = QueryArg.fromString(benchmarkQuery.arg1.getOrElse(""))
       val queryRel = QueryRel.fromString(benchmarkQuery.rel.getOrElse(""))
       val queryArg2 = QueryArg.fromString(benchmarkQuery.arg2.getOrElse(""))
-      val relString = queryRel.rels.mkString(" ")
+      val relString = queryRel.getFirstRel.get
       val (arg1Tags, relTags, arg2Tags) = QueryExpander.tagQuery(queryArg1, relString, queryArg2)
       
       // Link relation phrase to a WordNet sense

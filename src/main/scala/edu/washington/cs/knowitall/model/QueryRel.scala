@@ -7,6 +7,14 @@ case class QueryRel(
     srlLinks: Option[Set[String]]=None,
     wnLinks: Option[Set[String]]=None,
     vnLinks: Option[Set[String]]=None) {
+  
+  def getFirstRel(): Option[String] = {
+    rels match {
+      case Some(phrases) => if (phrases.isEmpty) { None } else { Some(phrases.toList(0)) }
+      case None => None
+    }
+  }
+  
   def getRelQueryString(): Option[String] = {
     rels match {
       case Some(phrases) => Some(phrases.map({ phrase =>

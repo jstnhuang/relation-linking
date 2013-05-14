@@ -29,7 +29,7 @@ class VerbNetQueryExpander(verbNetDbPath: String, wordNetUtils: WordNetUtils)
     val queryArg1 = QueryArg.fromString(rawQuery.arg1.getOrElse(""))
     val queryRel = QueryRel.fromString(rawQuery.rel.getOrElse(""))
     val queryArg2 = QueryArg.fromString(rawQuery.arg2.getOrElse(""))
-    val relString = queryRel.rels.mkString(" ")
+    val relString = queryRel.getFirstRel.get
     val (arg1Tags, relTags, arg2Tags) = QueryExpander.tagQuery(queryArg1, relString, queryArg2)
     
     // Find VerbNet senses for this query.
@@ -42,7 +42,7 @@ class VerbNetQueryExpander(verbNetDbPath: String, wordNetUtils: WordNetUtils)
       None
     }
     
-    if (verbNetSenses.size == 0) {
+    if (verbNetSenses.isEmpty) {
       System.err.println("No entailed VerbNet senses for " + queryRel.rels.getOrElse("(None)"))
       null
     } else {
