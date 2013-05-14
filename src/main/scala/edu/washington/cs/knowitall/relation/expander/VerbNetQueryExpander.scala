@@ -29,20 +29,21 @@ class VerbNetQueryExpander(verbNetDbPath: String, wordNetUtils: WordNetUtils)
     val queryArg1 = QueryArg.fromString(rawQuery.arg1.getOrElse(""))
     val queryRel = QueryRel.fromString(rawQuery.rel.getOrElse(""))
     val queryArg2 = QueryArg.fromString(rawQuery.arg2.getOrElse(""))
-    val (arg1Tags, relTags, arg2Tags) = QueryExpander.tagQuery(queryArg1, queryRel, queryArg2)
+    val relString = queryRel.rels.mkString(" ")
+    val (arg1Tags, relTags, arg2Tags) = QueryExpander.tagQuery(queryArg1, relString, queryArg2)
     
     // Find VerbNet senses for this query.
     val verbNetSenses = verbNetLinker.getRelationLinks(relTags)
     
     val preps = RelationPhraseFinder.getPrepositions(relTags)
     val relPreps = if (!preps.isEmpty) {
-      Some(relTags.map(_.string).mkString(" "))
+      Some(Set(relTags.map(_.string).mkString(" ")))
     } else {
       None
     }
     
     if (verbNetSenses.size == 0) {
-      System.err.println("No entailed VerbNet senses for " + queryRel.rel.getOrElse("(None)"))
+      System.err.println("No entailed VerbNet senses for " + queryRel.rels.getOrElse("(None)"))
       null
     } else {
       // Find all entailing VerbNet senses.
@@ -66,7 +67,7 @@ class VerbNetQueryExpander(verbNetDbPath: String, wordNetUtils: WordNetUtils)
       
       new OpenIeQuery(
         queryArg1,
-        new QueryRel(rel=relPreps, vnLinks=Some(entailedSenses)),
+        new QueryRel(rels=relPreps, vnLinks=Some(entailedSenses)),
         queryArg2
       )
     }

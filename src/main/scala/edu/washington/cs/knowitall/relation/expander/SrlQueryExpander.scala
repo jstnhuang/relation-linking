@@ -18,23 +18,24 @@ object SrlQueryExpander extends QueryExpander {
     val queryArg1 = QueryArg.fromString(rawQuery.arg1.getOrElse(""))
     val queryRel = QueryRel.fromString(rawQuery.rel.getOrElse(""))
     val queryArg2 = QueryArg.fromString(rawQuery.arg2.getOrElse(""))
-    val (arg1Tags, relTags, arg2Tags) = QueryExpander.tagQuery(queryArg1, queryRel, queryArg2)
+    val relString = queryRel.rels.mkString(" ")
+    val (arg1Tags, relTags, arg2Tags) = QueryExpander.tagQuery(queryArg1, relString, queryArg2)
     val sentence = arg1Tags ++ relTags ++ arg2Tags
     val relInterval = Interval.span(relTags.map(_.interval))
     val srlLinks = SrlRelationLinker.getRelationLinks(relTags, Some((sentence, relInterval)))
     val preps = RelationPhraseFinder.getPrepositions(relTags)
     val relPreps = if (!preps.isEmpty) {
-      Some(preps.map(_.string).mkString(" "))
+      Some(Set(preps.map(_.string).mkString(" ")))
     } else {
       None
     }
     if (srlLinks.size == 0) {
-      System.err.println("No SRL senses for " + queryRel.rel.getOrElse("(None)"))
+      System.err.println("No SRL senses for " + queryRel.rels.getOrElse("(None)"))
       null
     } else {
       new OpenIeQuery(
         queryArg1,
-        new QueryRel(rel=relPreps, srlLinks=Some(srlLinks)),
+        new QueryRel(rels=relPreps, srlLinks=Some(srlLinks)),
         queryArg2
       )
     }

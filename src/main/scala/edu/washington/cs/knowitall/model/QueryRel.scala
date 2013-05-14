@@ -3,13 +3,15 @@ package edu.washington.cs.knowitall.model
 import edu.washington.cs.knowitall.relation.PhraseNormalizer
 
 case class QueryRel(
-    rel: Option[String]=None,
+    rels: Option[Set[String]]=None,
     srlLinks: Option[Set[String]]=None,
     wnLinks: Option[Set[String]]=None,
     vnLinks: Option[Set[String]]=None) {
   def getRelQueryString(): Option[String] = {
-    rel match {
-      case Some(str) => Some("\"%s\"".format(PhraseNormalizer.normalize(str)))
+    rels match {
+      case Some(phrases) => Some(phrases.map({ phrase =>
+        "\"%s\"".format(PhraseNormalizer.normalize(phrase))
+      }).mkString(" OR "))
       case None => None
     }
   }
@@ -24,9 +26,9 @@ case class QueryRel(
   def getVnQueryString(): Option[String] = setOptionToUnionString(vnLinks)
   
   override def toString(): String = {
-    val relString = rel match {
+    val relString = rels match {
       case Some(str) => str
-      case None => ""
+      case None => "Strings: " + rels.mkString(", ")
     }
     val srlString = srlLinks match {
       case Some(links) => "SRL: " + links.mkString(", ")
@@ -59,7 +61,7 @@ object QueryRel {
       if (str == "") {
         new QueryRel()
       } else {
-        new QueryRel(rel=Some(str))
+        new QueryRel(rels=Some(Set(str)))
       }
     }
   }
