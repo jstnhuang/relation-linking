@@ -86,7 +86,7 @@ class ExpansionTracer(inputDir: String, outputDir: String) {
             while (vnToVnResults.next()) {
               val entailingVerbNetSense = vnToVnResults.getString(1)
               val line = List(
-                queryRel,
+                relString,
                 wordNetUtils.wordToString(wordSense, true, true),
                 "%s (%s)".format(wordNetUtils.wordToString(querySense, true, true), synOrTro),
                 verbNetSense,
@@ -107,7 +107,7 @@ class ExpansionTracer(inputDir: String, outputDir: String) {
           while (wnToVnResults.next()) {
             val verbNetSense = wnToVnResults.getString(1)
             val line = List(
-              queryRel,
+              relString,
               wordNetUtils.wordToString(wordSense, true, true),
               "%s (%s)".format(wordNetUtils.wordToString(tupleSense, true, true), synOrHyp),
               verbNetSense
@@ -129,7 +129,7 @@ object ExpansionTracer {
     var outputDir = "."
     
     val parser = new OptionParser() {
-      arg("inputDir", "Directory of VerbNet tables and WordNet.", {str => inputDir = str})
+      arg("inputFile", "Directory of queries/tuples to trace.", {str => inputDir = str})
       arg("outputDir", "Directory to put output files.", {str => outputDir = str})
     }
     
