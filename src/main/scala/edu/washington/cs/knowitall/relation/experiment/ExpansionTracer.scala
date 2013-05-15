@@ -47,7 +47,9 @@ class ExpansionTracer(inputDir: String, outputDir: String) {
       val queryArg1 = QueryArg.fromString(benchmarkQuery.arg1.getOrElse(""))
       val queryRel = QueryRel.fromString(benchmarkQuery.rel.getOrElse(""))
       val queryArg2 = QueryArg.fromString(benchmarkQuery.arg2.getOrElse(""))
+      val arg1String = queryArg1.arg.getOrElse("*")
       val relString = queryRel.getFirstRel.get
+      val arg2String = queryArg2.arg.getOrElse("*")
       val (arg1Tags, relTags, arg2Tags) = QueryExpander.tagQuery(queryArg1, relString, queryArg2)
       
       // Link relation phrase to a WordNet sense
@@ -86,7 +88,7 @@ class ExpansionTracer(inputDir: String, outputDir: String) {
             while (vnToVnResults.next()) {
               val entailingVerbNetSense = vnToVnResults.getString(1)
               val line = List(
-                relString,
+                "(%s, %s, %s)".format(arg1String, relString, arg2String),
                 wordNetUtils.wordToString(wordSense, true, true),
                 "%s (%s)".format(wordNetUtils.wordToString(querySense, true, true), synOrTro),
                 verbNetSense,
@@ -107,7 +109,7 @@ class ExpansionTracer(inputDir: String, outputDir: String) {
           while (wnToVnResults.next()) {
             val verbNetSense = wnToVnResults.getString(1)
             val line = List(
-              relString,
+              "(%s, %s, %s)".format(arg1String, relString, arg2String),
               wordNetUtils.wordToString(wordSense, true, true),
               "%s (%s)".format(wordNetUtils.wordToString(tupleSense, true, true), synOrHyp),
               verbNetSense
