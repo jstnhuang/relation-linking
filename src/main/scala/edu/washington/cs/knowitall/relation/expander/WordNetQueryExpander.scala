@@ -32,7 +32,7 @@ class WordNetQueryExpander(wordNetUtils: WordNetUtils) extends QueryExpander {
     }
     
     if (wordNetSenses.isEmpty) {
-      System.err.println("No WordNet senses for " + queryRel.rels.getOrElse("(None)"))
+      System.err.println("No WordNet senses for " + queryRel.getFirstRel.getOrElse("(None)"))
       null
     } else {
       val entailingSenses = wordNetSenses.flatMap { sense =>

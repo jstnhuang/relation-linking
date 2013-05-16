@@ -30,7 +30,7 @@ object SrlQueryExpander extends QueryExpander {
       None
     }
     if (srlLinks.isEmpty) {
-      System.err.println("No SRL senses for " + queryRel.rels.getOrElse("(None)"))
+      System.err.println("No SRL senses for " + queryRel.getFirstRel.getOrElse("(None)"))
       null
     } else {
       new OpenIeQuery(

@@ -43,7 +43,9 @@ class VerbNetQueryExpander(verbNetDbPath: String, wordNetUtils: WordNetUtils)
     }
     
     if (verbNetSenses.isEmpty) {
-      System.err.println("No entailed VerbNet senses for " + queryRel.rels.getOrElse("(None)"))
+      System.err.println(
+        "No entailed VerbNet senses for " + queryRel.getFirstRel.getOrElse("(None)")
+      )
       null
     } else {
       // Find all entailing VerbNet senses.
