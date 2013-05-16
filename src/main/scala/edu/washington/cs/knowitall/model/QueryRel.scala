@@ -35,8 +35,8 @@ case class QueryRel(
   
   override def toString(): String = {
     val relString = rels match {
-      case Some(str) => str
-      case None => "Strings: " + rels.mkString(", ")
+      case Some(phrases) => "Strings: " + phrases.mkString(", ")
+      case None => None
     }
     val srlString = srlLinks match {
       case Some(links) => "SRL: " + links.mkString(", ")
