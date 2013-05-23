@@ -73,4 +73,14 @@ class WordNetUtils(wordNetPath: String) {
     }
     result
   }
+  
+  /**
+   * Assumes a string of the form take_a_breather#1.
+   */
+  def wordFromString(str: String): IWord = {
+    val parts = "#".r.split(str).map(_.trim)
+    val lemma = parts(0).replace("_", " ")
+    val senseNumber = parts(1).toInt
+    getWordSense(lemma, POS.VERB, senseNumber)
+  }
 }
