@@ -111,18 +111,20 @@ class EntailmentGraphGenerator(vnToWnPath: String, wnToVnPath: String, wordNetPa
               entailmentGraph.addSynonym(verbNetSense, vnSynonym);
               traceWriter match {
                 case Some(writer) => {
-                  val traceCol = List(
-                    verbNetSense,
-                    wordNetUtils.wordToString(word, tagCount=true),
-                    wordNetUtils.wordToString(synonym, tagCount=true),
-                    vnSynonym
-                  ).mkString(" = ")
+//                  val traceCol = List(
+//                    verbNetSense,
+//                    wordNetUtils.wordToString(word, tagCount=true),
+//                    wordNetUtils.wordToString(synonym, tagCount=true),
+//                    vnSynonym
+//                  ).mkString(" = ")
                   val row = List(
                     verbNetSense,
                     vnSynonym,
                     verbNetSense.getGloss,
                     vnSynonym.getGloss,
-                    traceCol
+                    wordNetUtils.wordToString(word),
+                    wordNetUtils.wordToString(synonym),
+                    "" // hypernym
                   ).mkString("\t")
                   writer.write(row)
                   writer.newLine()
@@ -141,22 +143,24 @@ class EntailmentGraphGenerator(vnToWnPath: String, wnToVnPath: String, wordNetPa
               entailmentGraph.addEntailment(verbNetSense, vnHypernym);
               traceWriter match {
                 case Some(writer) => {
-                  val traceCol = List(
-                    List(
-                      verbNetSense,
-                      wordNetUtils.wordToString(word, tagCount=true)
-                    ).mkString(" = "),
-                    List(
-                      wordNetUtils.wordToString(hypernym, tagCount=true),
-                      vnHypernym
-                    ).mkString(" = ")
-                  ).mkString(" => ")
+//                  val traceCol = List(
+//                    List(
+//                      verbNetSense,
+//                      wordNetUtils.wordToString(word, tagCount=true)
+//                    ).mkString(" = "),
+//                    List(
+//                      wordNetUtils.wordToString(hypernym, tagCount=true),
+//                      vnHypernym
+//                    ).mkString(" = ")
+//                  ).mkString(" => ")
                   val row = List(
                     verbNetSense,
                     vnHypernym,
                     verbNetSense.getGloss,
                     vnHypernym.getGloss,
-                    traceCol
+                    wordNetUtils.wordToString(word),
+                    "",
+                    wordNetUtils.wordToString(hypernym)
                   ).mkString("\t")
                   writer.write(row)
                   writer.newLine()
