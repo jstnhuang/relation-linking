@@ -11,7 +11,7 @@ object EntailmentGraphEdgeType extends Enumeration {
 import EntailmentGraphEdgeType._
 
 /**
- * A directed graph where Propbank senses go to synonymous or entailed Propbank senses.
+ * A directed graph where VerbNetSense senses go to synonymous or entailed VerbNetSense senses.
  */
 class EntailmentGraph {
   var synonymEdges = Map[VerbNetSense, Set[VerbNetSense]]()
@@ -55,4 +55,3 @@ class EntailmentGraph {
     nodes = nodes + v1 + v2
   }
 }
-
