@@ -87,13 +87,16 @@ case class Features(tupleString: String, tupleWordNetLink: IWord, tupleSense: IW
     ).map(if (_) { 1 } else { 0 }).reduce(_ + _)
     val tupleLinkCount = wordNetUtils.getTagCount(tupleWordNetLink)
     val queryLinkCount = wordNetUtils.getTagCount(queryWordNetLink)
-    val wordNetSenseChanges = List(
+    List(synonymCount, entailmentCount, graphSenseChanges, tupleLinkCount, queryLinkCount,
+      pathLength()).map(_.toString) ++ List(tag)
+  }
+  
+  def pathLength(): Integer = {
+    List(
       tupleWordNetLink.equals(tupleSense), tupleSense.equals(wordNetSense1),
       wordNetSense1.equals(wordNetSense2), wordNetSense2.equals(querySense),
       querySense.equals(queryWordNetLink)
     ).map(if (_) { 1 } else { 0 }).reduce(_ + _)
-    List(synonymCount, entailmentCount, graphSenseChanges, tupleLinkCount, queryLinkCount,
-      wordNetSenseChanges).map(_.toString) ++ List(tag)
   }
 }
 
@@ -218,7 +221,7 @@ class FeatureExtractor(solrUrl: String, inputDir: String, outputDir: String) {
     val queryVerbNetSense1s = queryPaths.keySet;
     val queryString = query.toString()
     
-    groups.flatMap({ group =>
+    groups.map({ group =>
       val tuple = "(%s, %s, %s)".format(group.arg1.norm, group.rel.norm, group.arg2.norm)
       val tag = tags.getOrElse((queryString, tuple), "")
       val extraction = group.instances.head.extraction
@@ -245,22 +248,30 @@ class FeatureExtractor(solrUrl: String, inputDir: String, outputDir: String) {
       val tupleVerbNetSense1s = tuplePaths.keySet;
       val verbNetIntersection = queryVerbNetSense1s.intersect(tupleVerbNetSense1s)
       
-      verbNetIntersection.flatMap({ verbNetSense1 =>
+      var bestFeature = Option.empty[Features];
+      var shortestPath = Integer.MAX_VALUE;
+      verbNetIntersection.foreach({ verbNetSense1 =>
         val tupleWordNetSenses = tuplePaths(verbNetSense1)
         val queryEntailments = queryPaths(verbNetSense1)
-        tupleWordNetSenses.flatMap({ tupleSense =>
+        tupleWordNetSenses.foreach({ tupleSense =>
           val tupleSenseCount = wordNetUtils.getTagCount(tupleSense)
-          queryEntailments.flatMap({ case(verbNetSense2, querySense) =>
+          queryEntailments.foreach({ case(verbNetSense2, querySense) =>
             val querySenseCount = wordNetUtils.getTagCount(querySense)
             val graphPaths = graphTrace(verbNetSense1, verbNetSense2)
-            graphPaths.map({ case(wordNetSense1, wordNetSense2, edgeType) =>              
-              Features(tupleString, tupleWordNetLink, tupleSense, verbNetSense1,
+            graphPaths.foreach({ case(wordNetSense1, wordNetSense2, edgeType) =>         
+              val feature = Features(tupleString, tupleWordNetLink, tupleSense, verbNetSense1,
                 wordNetSense1, wordNetSense2, verbNetSense2, querySense, queryWordNetLink,
                 queryRelString, tupleSetType, edgeType, querySetType, tag)
+              val pathLength = feature.pathLength();
+              if (pathLength < shortestPath) {
+                bestFeature = Some(feature);
+                shortestPath = pathLength
+              }
             })
           })
         })
       })
+      bestFeature.get
     })
   }
   
