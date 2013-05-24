@@ -61,11 +61,39 @@ case class Features(tupleString: String, tupleWordNetLink: IWord, tupleSense: IW
       queryWordNetLinkString, queryRelString, tag)
   }
   
+  /**
+   * Feature set with all the WordNet counts and edge types.
+   */
   def features(wordNetUtils: WordNetUtils): List[String] = {
     val counts = List(tupleWordNetLink, tupleSense, wordNetSense1, wordNetSense2, querySense,
       queryWordNetLink).map(wordNetUtils.getTagCount(_).toString)
     val edgeTypes = List(tupleEdgeType, graphEdgeType, queryEdgeType)
     counts ++ edgeTypes ++ List(tag)
+  }
+  
+  /**
+   * Feature set with: # of synonyms, # of entailments, # of graph sense changes, WordNet counts for
+   * the tuple and query links, and the overall number of changes to WordNet senses along the path.
+   */
+  def features2(wordNetUtils: WordNetUtils): List[String] = {
+    val synonymCount = List(tupleEdgeType, graphEdgeType, queryEdgeType).map({ edgeType =>
+      if (edgeType == "synonym") { 1 } else { 0 }
+    }).reduce(_ + _)
+    val entailmentCount = List(tupleEdgeType, graphEdgeType, queryEdgeType).map({ edgeType =>
+      if (edgeType == "entailment") { 1 } else { 0 }
+    }).reduce(_ + _)
+    val graphSenseChanges = List(
+      tupleSense.equals(wordNetSense1), wordNetSense2.equals(querySense)
+    ).map(if (_) { 1 } else { 0 }).reduce(_ + _)
+    val tupleLinkCount = wordNetUtils.getTagCount(tupleWordNetLink)
+    val queryLinkCount = wordNetUtils.getTagCount(queryWordNetLink)
+    val wordNetSenseChanges = List(
+      tupleWordNetLink.equals(tupleSense), tupleSense.equals(wordNetSense1),
+      wordNetSense1.equals(wordNetSense2), wordNetSense2.equals(querySense),
+      querySense.equals(queryWordNetLink)
+    ).map(if (_) { 1 } else { 0 }).reduce(_ + _)
+    List(synonymCount, entailmentCount, graphSenseChanges, tupleLinkCount, queryLinkCount,
+      wordNetSenseChanges).map(_.toString) ++ List(tag)
   }
 }
 
@@ -79,6 +107,7 @@ class FeatureExtractor(solrUrl: String, inputDir: String, outputDir: String) {
   val TAGS_DIR = new File(inputDir, "tags")
   val TRACE_FILE = new File(outputDir, "trace.tsv")
   val FEATURES_FILE = new File(outputDir, "features.tsv")
+  val FEATURES2_FILE = new File(outputDir, "features2.tsv")
   type REG = ExtractionGroup[ReVerbExtraction];
   type TagMap = scala.collection.mutable.Map[(String, String), String];
   type EntailmentGraphTrace = Map[(String, String), Set[(IWord, IWord, String)]]
@@ -135,7 +164,14 @@ class FeatureExtractor(solrUrl: String, inputDir: String, outputDir: String) {
           ))
         }
         if (tag != "") {
-          tags += (tagKey -> tag)
+          val tagOutput = if (tag == "1") {
+            "correct"
+          } else if (tag == "0") {
+            "incorrect"
+          } else {
+            "bad"
+          }
+          tags += (tagKey -> tagOutput)
         }
       })
     });
@@ -242,6 +278,13 @@ class FeatureExtractor(solrUrl: String, inputDir: String, outputDir: String) {
     })
   }
   
+  def outputFeatures2(writer: BufferedWriter, featuresList: Set[Features]) = {
+    featuresList.foreach({ features =>
+      writer.write(features.features2(wordNetUtils).mkString("\t"))
+      writer.newLine()
+    })
+  }
+  
   /**
    * Runs the experiment for a given set of query expanders.
    */
@@ -253,6 +296,7 @@ class FeatureExtractor(solrUrl: String, inputDir: String, outputDir: String) {
     
     val traceWriter = new BufferedWriter(new FileWriter(TRACE_FILE))
     val featuresWriter = new BufferedWriter(new FileWriter(FEATURES_FILE))
+    val features2Writer = new BufferedWriter(new FileWriter(FEATURES2_FILE))
     
     val wordNetRelationLinker = new WordNetRelationLinker(wordNetUtils);
     val derbyHandler = new DerbyHandler(RELATION_DB_PATH)
@@ -270,9 +314,11 @@ class FeatureExtractor(solrUrl: String, inputDir: String, outputDir: String) {
         entailmentGraph, graphTrace)
       outputTrace(traceWriter, featuresList)
       outputFeatures(featuresWriter, featuresList)
+      outputFeatures2(features2Writer, featuresList)
     })
     traceWriter.close()
     featuresWriter.close()
+    features2Writer.close()
   }
 }
 
