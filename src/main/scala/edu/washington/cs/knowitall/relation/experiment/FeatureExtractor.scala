@@ -14,6 +14,61 @@ import edu.washington.cs.knowitall.relation.expander.{QueryExpander, VerbNetQuer
 import edu.washington.cs.knowitall.relation.linker.WordNetRelationLinker
 import scopt.OptionParser
 
+case class Features(tupleString: String, tupleWordNetLink: IWord, tupleSense: IWord,
+    verbNetSense1: String, wordNetSense1: IWord, wordNetSense2: IWord, verbNetSense2: String,
+    querySense: IWord, queryWordNetLink: IWord, queryRelString: String, tupleSetType: String,
+    edgeType: String, querySetType: String, tag: String) {
+  val tupleEdgeType = if(tupleWordNetLink.equals(tupleSense)) {
+    "identity"
+  } else if (tupleSetType == "synonym") {
+    "synonym"
+  } else {
+    "entailment"
+  }
+  val graphEdgeType = if(wordNetSense1.equals(wordNetSense2)) {
+    "identity"
+  } else if (edgeType == "synonym") {
+    "synonym"
+  } else {
+    "entailment"
+  }
+  val queryEdgeType = if(queryWordNetLink.equals(querySense)) {
+    "identity"
+  } else if (querySetType == "synonym") {
+    "synonym"
+  } else {
+    "entailment"
+  }
+  
+  def trace(wordNetUtils: WordNetUtils): List[String] = {
+    val tupleWordNetLinkString = wordNetUtils.wordToString(tupleWordNetLink, tagCount=true)
+    val tupleSenseString = "%s (%s)".format(
+      wordNetUtils.wordToString(tupleSense, tagCount=true),
+      tupleEdgeType
+    )
+    val graphWordNetSense1String = wordNetUtils.wordToString(wordNetSense1, tagCount=true)
+    val graphWordNetSense2String = "%s (%s)".format(
+      wordNetUtils.wordToString(wordNetSense2, tagCount=true),
+      graphEdgeType
+    )
+    val querySenseString = wordNetUtils.wordToString(querySense, tagCount=true)
+    val queryWordNetLinkString = "%s (%s)".format(
+      wordNetUtils.wordToString(queryWordNetLink, tagCount=true),
+      queryEdgeType
+    )
+    List(tupleString, tupleWordNetLinkString, tupleSenseString, verbNetSense1,
+      graphWordNetSense1String, graphWordNetSense2String, verbNetSense2, querySenseString,
+      queryWordNetLinkString, queryRelString, tag)
+  }
+  
+  def features(wordNetUtils: WordNetUtils): List[String] = {
+    val counts = List(tupleWordNetLink, tupleSense, wordNetSense1, wordNetSense2, querySense,
+      queryWordNetLink).map(wordNetUtils.getTagCount(_).toString)
+    val edgeTypes = List(tupleEdgeType, graphEdgeType, queryEdgeType)
+    counts ++ edgeTypes ++ List(tag)
+  }
+}
+
 class FeatureExtractor(solrUrl: String, inputDir: String, outputDir: String) {
   val solrExecutor = new SolrQueryExecutor(solrUrl)
   val WORDNET_PATH = Constants.wordNetPath(inputDir)
@@ -22,6 +77,7 @@ class FeatureExtractor(solrUrl: String, inputDir: String, outputDir: String) {
   val BENCHMARK_QUERIES_FILE = new File(inputDir, "benchmark-queries.tsv")
   val VN_TRACE_FILE = new File(inputDir, "vn_trace.txt")
   val TAGS_DIR = new File(inputDir, "tags")
+  val TRACE_FILE = new File(outputDir, "trace.tsv")
   val FEATURES_FILE = new File(outputDir, "features.tsv")
   type REG = ExtractionGroup[ReVerbExtraction];
   type TagMap = scala.collection.mutable.Map[(String, String), String];
@@ -91,10 +147,12 @@ class FeatureExtractor(solrUrl: String, inputDir: String, outputDir: String) {
     solrExecutor.execute(queryText).toSet
   }
   
-  def outputFeatures(writer: BufferedWriter, query: BenchmarkQuery, expandedQueryRel: QueryRel,
-      groups: Set[REG], tags: TagMap, wordNetLinker: WordNetRelationLinker,
-      entailmentGraph: EntailmentGraphDb, graphTrace: EntailmentGraphTrace) = {
-    val queryString = query.toString()
+  /**
+   * Extracts features from a query and a list of results.
+   */
+  def getFeatures(query: BenchmarkQuery, expandedQueryRel: QueryRel, groups: Set[REG], tags: TagMap,
+      wordNetLinker: WordNetRelationLinker, entailmentGraph: EntailmentGraphDb,
+      graphTrace: EntailmentGraphTrace): Set[Features] = {
     val queryRelString = query.rel.get
     val queryArg1 = QueryArg.fromString(query.arg1.getOrElse(""))
     val queryRel = QueryRel.fromString(query.rel.getOrElse(""))
@@ -102,7 +160,6 @@ class FeatureExtractor(solrUrl: String, inputDir: String, outputDir: String) {
     val relString = queryRel.getFirstRel.get
     val (arg1Tags, relTags, arg2Tags) = QueryExpander.tagQuery(queryArg1, relString, queryArg2)
     val queryWordNetLink = wordNetLinker.getWordRelationLinks(relTags).head
-    val queryWordNetLinkString = wordNetUtils.wordToString(queryWordNetLink, tagCount=true)
     val queryWordNetSynonyms = wordNetUtils.getSynonyms(queryWordNetLink)
     val (queryWordNetLinkSet, querySetType) = if (queryWordNetSynonyms.isEmpty) {
       (wordNetUtils.getHyponyms(queryWordNetLink), "troponym")
@@ -123,21 +180,21 @@ class FeatureExtractor(solrUrl: String, inputDir: String, outputDir: String) {
       })
     })
     val queryVerbNetSense1s = queryPaths.keySet;
+    val queryString = query.toString()
     
-    groups.foreach({group =>
+    groups.flatMap({ group =>
       val tuple = "(%s, %s, %s)".format(group.arg1.norm, group.rel.norm, group.arg2.norm)
       val tag = tags.getOrElse((queryString, tuple), "")
-      val instance = group.instances.head
-      val extraction = instance.extraction
+      val extraction = group.instances.head.extraction
       val tupleString = extraction.relText;
       val tupleWordNetLink = wordNetLinker.getWordRelationLinks(extraction.relTokens).head
-      val tupleWordNetLinkString = wordNetUtils.wordToString(tupleWordNetLink, tagCount=true)
       val tupleWordNetLinkSynonyms = wordNetUtils.getSynonyms(tupleWordNetLink) 
       val (tupleWordNetLinkSet, tupleSetType) = if (tupleWordNetLinkSynonyms.isEmpty) {
         (wordNetUtils.getHypernyms(tupleWordNetLink), "hypernym")
       } else {
         (tupleWordNetLinkSynonyms, "synonym")
       }
+      
       var tuplePaths = Map.empty[String, Set[IWord]]
       tupleWordNetLinkSet.foreach({ wordNetSense =>
         val wordNetString = wordNetUtils.wordToString(wordNetSense)
@@ -148,35 +205,40 @@ class FeatureExtractor(solrUrl: String, inputDir: String, outputDir: String) {
           tuplePaths += (verbNetSense -> wordNetSenses)
         })
       })
-      val tupleVerbNetSense1s = tuplePaths.keySet;
       
+      val tupleVerbNetSense1s = tuplePaths.keySet;
       val verbNetIntersection = queryVerbNetSense1s.intersect(tupleVerbNetSense1s)
-      verbNetIntersection.foreach({ verbNetSense1 =>
+      
+      verbNetIntersection.flatMap({ verbNetSense1 =>
         val tupleWordNetSenses = tuplePaths(verbNetSense1)
         val queryEntailments = queryPaths(verbNetSense1)
-        val allPaths = tupleWordNetSenses.zip(queryEntailments)
-        tupleWordNetSenses.foreach({ tupleSense =>
-          queryEntailments.foreach({ case(verbNetSense2, querySense) =>
+        tupleWordNetSenses.flatMap({ tupleSense =>
+          val tupleSenseCount = wordNetUtils.getTagCount(tupleSense)
+          queryEntailments.flatMap({ case(verbNetSense2, querySense) =>
+            val querySenseCount = wordNetUtils.getTagCount(querySense)
             val graphPaths = graphTrace(verbNetSense1, verbNetSense2)
-            graphPaths.foreach({ case(wordNetSense1, wordNetSense2, edgeType) =>
-              val graphWordNetSense1String = wordNetUtils.wordToString(wordNetSense1, tagCount=true)
-              val graphWordNetSense2 = wordNetUtils.wordToString(wordNetSense2, tagCount=true)
-              val graphWordNetSense2String = "%s (%s)".format(graphWordNetSense2, edgeType)
-              val tupleSenseString = "%s (%s)".format(
-                wordNetUtils.wordToString(tupleSense, tagCount=true), tupleSetType
-              )
-              val querySenseString = "%s (%s)".format(
-                wordNetUtils.wordToString(querySense, tagCount=true), querySetType
-              )
-              val path = List(tupleString, tupleWordNetLinkString, tupleSenseString, verbNetSense1,
-                graphWordNetSense1String, graphWordNetSense2String, verbNetSense2, querySenseString,
-                queryWordNetLinkString, queryRelString, tag)
-              writer.write(path.mkString("\t"))
-              writer.newLine()
+            graphPaths.map({ case(wordNetSense1, wordNetSense2, edgeType) =>              
+              Features(tupleString, tupleWordNetLink, tupleSense, verbNetSense1,
+                wordNetSense1, wordNetSense2, verbNetSense2, querySense, queryWordNetLink,
+                queryRelString, tupleSetType, edgeType, querySetType, tag)
             })
           })
         })
       })
+    })
+  }
+  
+  def outputTrace(writer: BufferedWriter, featuresList: Set[Features]) = {
+    featuresList.foreach({ features =>
+      writer.write(features.trace(wordNetUtils).mkString("\t"))
+      writer.newLine()
+    })
+  }
+  
+  def outputFeatures(writer: BufferedWriter, featuresList: Set[Features]) = {
+    featuresList.foreach({ features =>
+      writer.write(features.features(wordNetUtils).mkString("\t"))
+      writer.newLine()
     })
   }
   
@@ -189,6 +251,7 @@ class FeatureExtractor(solrUrl: String, inputDir: String, outputDir: String) {
     val benchmarkQueries = getTestQueries()
     val tags = getTags(TAGS_DIR)
     
+    val traceWriter = new BufferedWriter(new FileWriter(TRACE_FILE))
     val featuresWriter = new BufferedWriter(new FileWriter(FEATURES_FILE))
     
     val wordNetRelationLinker = new WordNetRelationLinker(wordNetUtils);
@@ -203,9 +266,12 @@ class FeatureExtractor(solrUrl: String, inputDir: String, outputDir: String) {
       } else {
         (runQuery(query), query.getQueryRel)
       }
-      outputFeatures(featuresWriter, benchmarkQuery, expansion, groups, tags, wordNetRelationLinker,
+      val featuresList = getFeatures(benchmarkQuery, expansion, groups, tags, wordNetRelationLinker,
         entailmentGraph, graphTrace)
+      outputTrace(traceWriter, featuresList)
+      outputFeatures(featuresWriter, featuresList)
     })
+    traceWriter.close()
     featuresWriter.close()
   }
 }
