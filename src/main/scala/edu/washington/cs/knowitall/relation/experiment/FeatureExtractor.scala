@@ -259,7 +259,7 @@ class FeatureExtractor(solrUrl: String, inputDir: String, outputDir: String) {
             val querySenseCount = wordNetUtils.getTagCount(querySense)
             val graphPaths = graphTrace(verbNetSense1, verbNetSense2)
             graphPaths.foreach({ case(wordNetSense1, wordNetSense2, edgeType) =>         
-              val feature = Features(tupleString, tupleWordNetLink, tupleSense, verbNetSense1,
+              val feature = Features(tuple, tupleWordNetLink, tupleSense, verbNetSense1,
                 wordNetSense1, wordNetSense2, verbNetSense2, querySense, queryWordNetLink,
                 queryRelString, tupleSetType, edgeType, querySetType, tag)
               val pathLength = feature.pathLength();
