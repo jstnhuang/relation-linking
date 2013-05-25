@@ -16,7 +16,7 @@ import scopt.OptionParser
 
 case class Features(tupleString: String, tupleWordNetLink: IWord, tupleSense: IWord,
     verbNetSense1: String, wordNetSense1: IWord, wordNetSense2: IWord, verbNetSense2: String,
-    querySense: IWord, queryWordNetLink: IWord, queryRelString: String, tupleSetType: String,
+    querySense: IWord, queryWordNetLink: IWord, queryString: String, tupleSetType: String,
     edgeType: String, querySetType: String, tag: String) {
   val tupleEdgeType = if(tupleWordNetLink.equals(tupleSense)) {
     "identity"
@@ -68,7 +68,7 @@ case class Features(tupleString: String, tupleWordNetLink: IWord, tupleSense: IW
     )
     List(tupleString, tupleWordNetLinkString, tupleSenseString, verbNetSense1,
       graphWordNetSense1String, graphWordNetSense2String, verbNetSense2, querySenseString,
-      queryWordNetLinkString, queryRelString)
+      queryWordNetLinkString, queryString)
   }
   
   /**
@@ -192,7 +192,6 @@ class FeatureExtractor(solrUrl: String, inputDir: String, outputDir: String) {
   def getFeatures(query: BenchmarkQuery, expandedQueryRel: QueryRel, groups: Set[REG], tags: TagMap,
       wordNetLinker: WordNetRelationLinker, entailmentGraph: EntailmentGraphDb,
       graphTrace: EntailmentGraphTrace): Set[Features] = {
-    val queryRelString = query.rel.get
     val queryArg1 = QueryArg.fromString(query.arg1.getOrElse(""))
     val queryRel = QueryRel.fromString(query.rel.getOrElse(""))
     val queryArg2 = QueryArg.fromString(query.arg2.getOrElse(""))
@@ -261,7 +260,7 @@ class FeatureExtractor(solrUrl: String, inputDir: String, outputDir: String) {
             graphPaths.foreach({ case(wordNetSense1, wordNetSense2, edgeType) =>         
               val feature = Features(tuple, tupleWordNetLink, tupleSense, verbNetSense1,
                 wordNetSense1, wordNetSense2, verbNetSense2, querySense, queryWordNetLink,
-                queryRelString, tupleSetType, edgeType, querySetType, tag)
+                queryString, tupleSetType, edgeType, querySetType, tag)
               val pathLength = feature.pathLength();
               if (pathLength < shortestPath) {
                 bestFeature = Some(feature);
