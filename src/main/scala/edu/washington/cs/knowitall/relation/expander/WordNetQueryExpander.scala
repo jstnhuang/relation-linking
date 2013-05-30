@@ -25,8 +25,8 @@ class WordNetQueryExpander(wordNetUtils: WordNetUtils) extends QueryExpander {
     
     val wordNetSenses = wordNetLinker.getWordRelationLinks(relTags)
     val preps = RelationPhraseFinder.getPrepositions(relTags)
-    val relPreps = if(!preps.isEmpty) {
-      Some(Set(preps.map(_.string).mkString(" ")))
+    val rels = if(!preps.isEmpty) {
+      Some(Set(relString) ++ Set(preps.map(_.string).mkString(" ")))
     } else {
       None
     }
@@ -42,7 +42,7 @@ class WordNetQueryExpander(wordNetUtils: WordNetUtils) extends QueryExpander {
       }.map(wordNetUtils.wordToString(_))
       new OpenIeQuery(
         queryArg1,
-        new QueryRel(rels=relPreps, wnLinks=Some(entailingSenses)),
+        new QueryRel(rels=rels, wnLinks=Some(entailingSenses)),
         queryArg2
       )
     }

@@ -24,8 +24,8 @@ object SrlQueryExpander extends QueryExpander {
     val relInterval = Interval.span(relTags.map(_.interval))
     val srlLinks = SrlRelationLinker.getRelationLinks(relTags, Some((sentence, relInterval)))
     val preps = RelationPhraseFinder.getPrepositions(relTags)
-    val relPreps = if (!preps.isEmpty) {
-      Some(Set(preps.map(_.string).mkString(" ")))
+    val rels = if (!preps.isEmpty) {
+      Some(Set(relString) ++ Set(preps.map(_.string).mkString(" ")))
     } else {
       None
     }
@@ -35,7 +35,7 @@ object SrlQueryExpander extends QueryExpander {
     } else {
       new OpenIeQuery(
         queryArg1,
-        new QueryRel(rels=relPreps, srlLinks=Some(srlLinks)),
+        new QueryRel(rels=rels, srlLinks=Some(srlLinks)),
         queryArg2
       )
     }

@@ -36,8 +36,8 @@ class VerbNetQueryExpander(verbNetDbPath: String, wordNetUtils: WordNetUtils)
     val verbNetSenses = verbNetLinker.getRelationLinks(relTags)
     
     val preps = RelationPhraseFinder.getPrepositions(relTags)
-    val relPreps = if (!preps.isEmpty) {
-      Some(Set(relTags.map(_.string).mkString(" ")))
+    val rels = if (!preps.isEmpty) {
+      Some(Set(relString) ++ Set(relTags.map(_.string).mkString(" ")))
     } else {
       None
     }
@@ -69,7 +69,7 @@ class VerbNetQueryExpander(verbNetDbPath: String, wordNetUtils: WordNetUtils)
       
       new OpenIeQuery(
         queryArg1,
-        new QueryRel(rels=relPreps, vnLinks=Some(entailingSenses)),
+        new QueryRel(rels=rels, vnLinks=Some(entailingSenses)),
         queryArg2
       )
     }
