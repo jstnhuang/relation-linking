@@ -27,7 +27,7 @@ class SolrQueryExecutor (solrUrl: String) extends QueryExecutor {
   def execute(queryString: String): Iterator[ExtractionGroup[ReVerbExtraction]] = {
     val squery = new SolrQuery()
     squery.setQuery(queryString)
-    squery.setRows(1000)
+    squery.setRows(100000)
     val response = solr.query(squery)
     for (result <- response.getResults().iterator().asScala) yield {
       convertSolrDocument(result)
