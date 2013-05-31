@@ -37,7 +37,7 @@ class CleanQueryExpander(relationLinkDbPath: String) extends QueryExpander {
     } else {
       new OpenIeQuery(
         queryArg1,
-        new QueryRel(rels=Some(Set(relString) ++ entailingSenses)),
+        new QueryRel(rels=Some(entailingSenses)),
         queryArg2
       )
     }

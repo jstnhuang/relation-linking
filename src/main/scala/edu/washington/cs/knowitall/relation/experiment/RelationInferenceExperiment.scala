@@ -62,9 +62,10 @@ class RelationInferenceExperiment(solrUrl: String, inputDir: String, outputDir: 
     tags
   }
   
-  def runQuery(query: OpenIeQuery): Set[REG] = {
+  def runQuery(baselineQuery: OpenIeQuery, query: OpenIeQuery): Set[REG] = {
+    val baselineQueryText = baselineQuery.getQueryString()
     val queryText = query.getQueryString()
-    solrExecutor.execute(queryText).toSet
+    solrExecutor.execute("(%s) OR (%s)".format(baselineQueryText, queryText)).toSet
   }
   
   /**
@@ -120,11 +121,12 @@ class RelationInferenceExperiment(solrUrl: String, inputDir: String, outputDir: 
     queryExpanders.foreach({ expander =>
       val systemName = expander.getName()
       benchmarkQueries.foreach({ benchmarkQuery =>
+        val baselineQuery = baselineExpander.expandQuery(benchmarkQuery)
         val query = expander.expandQuery(benchmarkQuery)
         val (groups, expansion) = if (query == null) {
           (Set.empty[REG], new QueryRel())
         } else {
-          (runQuery(query), query.getQueryRel)
+          (runQuery(baselineQuery, query), query.getQueryRel)
         }
         outputSentences(sentenceWriter, systemName, benchmarkQuery, expansion, groups, tags)
       })
