@@ -37,7 +37,7 @@ class VerbNetQueryExpander(verbNetDbPath: String, wordNetUtils: WordNetUtils)
     
     val preps = RelationPhraseFinder.getPrepositions(relTags)
     val rels = if (!preps.isEmpty) {
-      Some(Set(relString) ++ Set(relTags.map(_.string).mkString(" ")))
+      Some(Set(relTags.map(_.string).mkString(" ")))
     } else {
       None
     }

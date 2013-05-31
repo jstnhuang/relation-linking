@@ -26,7 +26,7 @@ class WordNetQueryExpander(wordNetUtils: WordNetUtils) extends QueryExpander {
     val wordNetSenses = wordNetLinker.getWordRelationLinks(relTags)
     val preps = RelationPhraseFinder.getPrepositions(relTags)
     val rels = if(!preps.isEmpty) {
-      Some(Set(relString) ++ Set(preps.map(_.string).mkString(" ")))
+      Some(Set(preps.map(_.string).mkString(" ")))
     } else {
       None
     }

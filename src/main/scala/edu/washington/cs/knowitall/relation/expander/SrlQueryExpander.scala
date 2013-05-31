@@ -25,7 +25,7 @@ object SrlQueryExpander extends QueryExpander {
     val srlLinks = SrlRelationLinker.getRelationLinks(relTags, Some((sentence, relInterval)))
     val preps = RelationPhraseFinder.getPrepositions(relTags)
     val rels = if (!preps.isEmpty) {
-      Some(Set(relString) ++ Set(preps.map(_.string).mkString(" ")))
+      Some(Set(preps.map(_.string).mkString(" ")))
     } else {
       None
     }
