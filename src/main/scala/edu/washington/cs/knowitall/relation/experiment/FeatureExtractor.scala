@@ -143,7 +143,7 @@ class FeatureExtractor(solrUrl: String, inputDir: String, outputDir: String) {
       }
       val key = (vn1, vn2)
       var path = trace.getOrElse(key, Set.empty[(IWord, IWord, String)])
-      path += Tuple(wordSense1, wordSense2, edgeType)
+      path += Tuple3(wordSense1, wordSense2, edgeType)
       trace += (key -> path)
     })
     trace
@@ -212,7 +212,7 @@ class FeatureExtractor(solrUrl: String, inputDir: String, outputDir: String) {
         val verbNetSense1s = entailmentGraph.entailingVerbNetSenses(verbNetSense2)
         verbNetSense1s.foreach({verbNetSense1 =>
           var wordNetSenses = queryPaths.getOrElse(verbNetSense1, Set.empty[(String, IWord)])
-          wordNetSenses += Tuple(verbNetSense2, wordNetSense)
+          wordNetSenses += Tuple2(verbNetSense2, wordNetSense)
           queryPaths += (verbNetSense1 -> wordNetSenses)
         })
       })

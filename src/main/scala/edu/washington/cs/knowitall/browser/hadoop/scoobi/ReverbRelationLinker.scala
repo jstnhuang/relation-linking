@@ -4,19 +4,16 @@ import com.nicta.scoobi.Scoobi.persist
 import com.nicta.scoobi.application.ScoobiApp
 import com.nicta.scoobi.core.DList
 import com.nicta.scoobi.io.text.{TextInput, TextOutput}
-import scopt.OptionParser
-import edu.washington.cs.knowitall.relation.linker.SrlRelationLinker
-import edu.washington.cs.knowitall.relation.linker.RelationLinker
-import edu.knowitall.openie.models.ReVerbExtractionGroup
-import edu.washington.cs.knowitall.relation.linker.VerbNetRelationLinker
-import edu.washington.cs.knowitall.relation.linker.WordNetRelationLinker
-import edu.knowitall.openie.models.ReVerbInstanceSerializer
-import edu.knowitall.tool.postag.PostaggedToken
-import edu.washington.cs.knowitall.db.DerbyHandler
-import edu.washington.cs.knowitall.relation.Constants
 import edu.knowitall.collection.immutable.Interval
+import edu.knowitall.tool.postag.PostaggedToken
 import edu.washington.cs.knowitall.WordNetUtils
+import edu.washington.cs.knowitall.relation.Constants
+import edu.washington.cs.knowitall.relation.linker.{SrlRelationLinker, VerbNetRelationLinker, WordNetRelationLinker}
 import edu.washington.cs.knowitall.relation.linker.EntailmentDirection._
+import scopt.OptionParser
+import edu.knowitall.openie.models.ReVerbExtractionGroup
+import edu.knowitall.openie.models.ReVerbInstanceSerializer
+import com.nicta.scoobi.core.Reduction
 
 /**
  * Hadoop job that links a Reverb extraction group to its SRL sense, WordNet sense, and VerbNet
@@ -82,7 +79,7 @@ object ReverbRelationLinker extends ScoobiApp {
                   ReVerbExtractionGroup.serializeVnLinks(vnLinks)
                 ).mkString("\t")
                 val value = ReVerbInstanceSerializer.serializeToString(instance)
-                Some(key, value)
+                Some(key, List(value))
               } catch {
                 case e: Error => {
 //                  System.err.println("ReverbRelationLinker: error processing %s: %s".format(
@@ -104,10 +101,10 @@ object ReverbRelationLinker extends ScoobiApp {
         }
       }
     }).groupByKey
-    .combine((instance1: String, instance2: String) => instance1 + "\t" + instance2)
+    .combine(Reduction.list[String])
     .map {
-      case (key: String, instances: String) => {
-        key + "\t" + instances
+      case (key: String, instances: List[String]) => {
+        key + "\t" + instances.mkString("\t")
       }
     }
     result

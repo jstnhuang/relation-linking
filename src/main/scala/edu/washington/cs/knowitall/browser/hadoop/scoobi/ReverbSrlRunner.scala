@@ -1,23 +1,16 @@
 package edu.washington.cs.knowitall.browser.hadoop.scoobi
 
 import scala.Option.option2Iterable
-import com.nicta.scoobi.Scoobi.ComparableGrouping
-import com.nicta.scoobi.Scoobi.DList
-import com.nicta.scoobi.Scoobi.ScoobiApp
-import com.nicta.scoobi.Scoobi.StringFmt
-import com.nicta.scoobi.Scoobi.TextInput
-import com.nicta.scoobi.Scoobi.TextOutput
-import com.nicta.scoobi.Scoobi.Tuple2Fmt
-import com.nicta.scoobi.Scoobi.persist
+
+import com.nicta.scoobi.Scoobi.{ComparableGrouping, DList, ScoobiApp, StringFmt, Tuple2Fmt, persist}
+import com.nicta.scoobi.core.Reduction
+import com.nicta.scoobi.io.text.{TextInput, TextOutput}
+
+import edu.knowitall.collection.immutable.Interval
+import edu.knowitall.openie.models.{ExtractionGroup, Instance, ReVerbExtraction, ReVerbExtractionGroup, ReVerbInstanceSerializer}
 import edu.knowitall.tool.parse.ClearParser
 import edu.knowitall.tool.srl.ClearSrl
-import edu.knowitall.openie.models.ExtractionGroup
-import edu.knowitall.openie.models.ReVerbExtractionGroup
 import scopt.OptionParser
-import edu.knowitall.openie.models.Instance
-import edu.knowitall.openie.models.ReVerbExtraction
-import edu.knowitall.openie.models.ReVerbInstanceSerializer
-import edu.knowitall.collection.immutable.Interval
 
 object ReverbSrlRunnerStaticVars {
   val clearParser = new ClearParser() 
@@ -76,7 +69,7 @@ object ReverbSrlRunner extends ScoobiApp {
                 ).mkString("\t")
                 val value = ReVerbInstanceSerializer.serializeToString(instance)
                 
-                Some(key, value)
+                Some(key, List(value))
               } catch {
                 case e: Error => {
                   System.err.println(
@@ -100,10 +93,10 @@ object ReverbSrlRunner extends ScoobiApp {
         }
       }
     }.groupByKey
-    .combine((instance1: String, instance2: String) => instance1 + "\t" + instance2)
+    .combine(Reduction.list[String])
     .map {
-      case (key: String, instances: String) => {
-        key + "\t" + instances
+      case (key: String, instances: List[String]) => {
+        key + "\t" + instances.mkString("\t")
       }
     }
     
