@@ -41,7 +41,7 @@ class WordNetQueryExpander(wordNetUtils: WordNetUtils) extends QueryExpander {
         val hyponyms = wordNetUtils.getHyponyms(sense)
         synonyms ++ hyponyms
       }.filter(wordNetUtils.getSenseNumber(_) <= MAX_NUM_SENSES).map({ sense => 
-        "%s#%d".format(sense.getLemma(), wordNetUtils.getSenseNumber(sense))
+        "%s#1".format(sense.getLemma())
       })
       new OpenIeQuery(
         queryArg1,
