@@ -13,6 +13,7 @@ import edu.washington.cs.knowitall.model.QueryArg
  */
 class WordNetQueryExpander(wordNetUtils: WordNetUtils) extends QueryExpander {
   val wordNetLinker = new WordNetRelationLinker(wordNetUtils)
+  val MAX_NUM_SENSES = 3
   
   def getName(): String = "WordNet"
 
@@ -23,7 +24,7 @@ class WordNetQueryExpander(wordNetUtils: WordNetUtils) extends QueryExpander {
     val relString = queryRel.getFirstRel.get
     val (arg1Tags, relTags, arg2Tags) = QueryExpander.tagQuery(queryArg1, relString, queryArg2)
     
-    val wordNetSenses = wordNetLinker.getWordRelationLinks(relTags)
+    val wordNetSenses = wordNetLinker.getWordRelationLinks(relTags, maxNumSenses=MAX_NUM_SENSES)
     val preps = RelationPhraseFinder.getPrepositions(relTags)
     val rels = if(!preps.isEmpty) {
       Some(Set(preps.map(_.string).mkString(" ")))
@@ -39,7 +40,9 @@ class WordNetQueryExpander(wordNetUtils: WordNetUtils) extends QueryExpander {
         val synonyms = wordNetUtils.getSynonyms(sense)
         val hyponyms = wordNetUtils.getHyponyms(sense)
         synonyms ++ hyponyms
-      }.map(wordNetUtils.wordToString(_))
+      }.filter(wordNetUtils.getSenseNumber(_) <= MAX_NUM_SENSES).map({ sense => 
+        "%s#%d".format(sense.getLemma(), wordNetUtils.getSenseNumber(sense))
+      })
       new OpenIeQuery(
         queryArg1,
         new QueryRel(rels=rels, wnLinks=Some(entailingSenses)),
