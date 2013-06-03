@@ -25,15 +25,16 @@ class WordNetRelationLinker(wordNetUtils: WordNetUtils)
    */
   def getWordRelationLinks(
       phrase: Seq[PostaggedToken],
-      context: Option[(Seq[PostaggedToken], Interval)] = None): Set[IWord] = {
+      context: Option[(Seq[PostaggedToken], Interval)] = None,
+      maxNumSenses: Integer = 3): Set[IWord] = {
     val headPhrase = RelationPhraseFinder.getHeadPhrase(phrase);
     var words = headPhrase.map(_.string).map(word => PhraseNormalizer.normalize(word))
     var wordNetSenses = Set.empty[IWord]
-    while(words.size > 0 && wordNetSenses.size == 0) {
+    while(words.size > 0 && wordNetSenses.isEmpty) {
       var currentPhrase = words.mkString(" ")
-      val word = wordNetUtils.getWordSense(currentPhrase, POS.VERB, 1);
-      if (word != null) {
-        wordNetSenses += word
+      val wordSenses = wordNetUtils.getWordSenses(currentPhrase, POS.VERB);
+      if (wordSenses != null) {
+        wordNetSenses = wordSenses.take(maxNumSenses).toSet
       }
       words = words.dropRight(1)
     }

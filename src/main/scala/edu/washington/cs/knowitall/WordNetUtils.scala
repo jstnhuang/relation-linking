@@ -35,6 +35,19 @@ class WordNetUtils(wordNetPath: String) {
     }
   }
   
+  def getWordSenses(word: String, partOfSpeech: POS): Seq[IWord] = {
+    try {
+      val indexWord = wordNet.getIndexWord(word, partOfSpeech)
+      val wordIds = indexWord.getWordIDs().asScala
+      wordIds.map(wordNet.getWord(_))
+    } catch {
+      case e: Exception => {
+//        System.err.println("Error: couldn't get word sense for \"%s\"".format(word));
+        null
+      }
+    }
+  }
+  
   def getSynonyms(word: IWord): Set[IWord] = {
     word.getSynset().getWords().asScala.toSet
   }
