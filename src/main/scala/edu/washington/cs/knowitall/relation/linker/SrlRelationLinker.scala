@@ -18,7 +18,7 @@ object SrlRelationLinker extends RelationLinker {
   def getRelationLinks(
       phrase: Seq[PostaggedToken],
       context: Option[(Seq[PostaggedToken], Interval)]): Set[String] = {
-    val headPhrase = RelationPhraseFinder.getHeadPhrase(phrase)
+    val (headPhrase, headIndex) = RelationPhraseFinder.getHeadPhrase(phrase)
     val (sentence, interval) = context match {
       case Some((sent, interval)) => (sent, interval)
       case None => (
