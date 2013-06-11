@@ -26,40 +26,44 @@ class VerbNetRelationLinker(verbNetDbPath: String, wordNetUtils: WordNetUtils,
       phrase: Seq[PostaggedToken],
       context: Option[(Seq[PostaggedToken], Interval)] = None): Set[String] = {
     val wordNetSenses = wordNetLinker.getWordRelationLinks(phrase)
-    
-    val synonyms = wordNetSenses.flatMap(wordNetUtils.getSynonyms(_))
-    val others = if (direction == Hypernym) {
-      wordNetSenses.flatMap(wordNetUtils.getHypernyms(_))
-    } else {
-      wordNetSenses.flatMap(wordNetUtils.getHyponyms(_))
-    }
-    val senses = if (!synonyms.isEmpty) {
-      synonyms
-    } else {
-      others
-    }
-    
-    var relationLinks = Set[String]()
-    if (senses.size == 0) {
-      relationLinks
-    } else {
-      val selectStatement = derbyHandler.prepareStatement(
-        "SELECT vn FROM wn_to_vn WHERE wn IN ("
-        + senses.toSeq.map(_ => "?").mkString(", ") + ")"
-      )
-      var index = 1;
-      senses.foreach({ sense =>
-        selectStatement.setString(index, wordNetUtils.wordToString(sense))
-        index += 1
-      })
-      
-      val results = derbyHandler.query(selectStatement);
-      while(results.next()) {
-        val verbNetSense = results.getString(1)
-        relationLinks += verbNetSense
+    wordNetLinker.getWordRelationLinks(phrase, maxNumSenses=100) match {
+      case Some((preHeadWords, wordNetSenses, postHeadWords)) => {
+        val synonyms = wordNetSenses.flatMap(wordNetUtils.getSynonyms(_))
+        val others = if (direction == Hypernym) {
+          wordNetSenses.flatMap(wordNetUtils.getHypernyms(_))
+        } else {
+          wordNetSenses.flatMap(wordNetUtils.getHyponyms(_))
+        }
+        val senses = if (!synonyms.isEmpty) {
+          synonyms
+        } else {
+          others
+        }
+        
+        var relationLinks = Set[String]()
+        if (senses.size == 0) {
+          relationLinks
+        } else {
+          val selectStatement = derbyHandler.prepareStatement(
+            "SELECT vn FROM wn_to_vn WHERE wn IN ("
+            + senses.toSeq.map(_ => "?").mkString(", ") + ")"
+          )
+          var index = 1;
+          senses.foreach({ sense =>
+            selectStatement.setString(index, wordNetUtils.wordToString(sense))
+            index += 1
+          })
+          
+          val results = derbyHandler.query(selectStatement);
+          while(results.next()) {
+            val verbNetSense = results.getString(1)
+            relationLinks += verbNetSense
+          }
+          selectStatement.close()
+          relationLinks
+        }
       }
-      selectStatement.close()
-      relationLinks
+      case None => Set.empty[String]
     }
   }
 }
