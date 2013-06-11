@@ -39,8 +39,10 @@ mainClass in assembly := Some("edu.washington.cs.knowitall.browser.hadoop.scoobi
 
 mergeStrategy in assembly <<= (mergeStrategy in assembly) { (old) =>
   {
-    case PathList("javax", "servlet", xs @ _*) => MergeStrategy.first
-    case PathList("org", "xmlpull", xs @ _*) => MergeStrategy.first
-    case x => old(x)
+    case x => {
+      val oldstrat = old(x)
+      if (oldstrat == MergeStrategy.deduplicate) MergeStrategy.first
+      else oldstrat
+    }
   }
 }
