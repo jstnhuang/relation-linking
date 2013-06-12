@@ -25,7 +25,7 @@ class WordNetQueryExpander(wordNetUtils: WordNetUtils) extends QueryExpander {
     val relString = queryRel.getFirstRel.get
     val (arg1Tags, relTags, arg2Tags) = QueryExpander.tagQuery(queryArg1, relString, queryArg2)
     
-    wordNetLinker.getRelationLinks(relTags, maxNumSenses=100) match {
+    wordNetLinker.getRelationLinks(relTags) match {
       case Some((preHeadWords, wordNetSenses, postHeadWords)) => {
         val preString = preHeadWords.mkString(" ")
         val postString = postHeadWords.mkString(" ")
