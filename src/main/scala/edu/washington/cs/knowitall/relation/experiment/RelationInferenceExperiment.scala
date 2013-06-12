@@ -62,10 +62,19 @@ class RelationInferenceExperiment(solrUrl: String, inputDir: File, outputDir: Fi
     tags
   }
   
-  def runQuery(baselineQuery: OpenIeQuery, query: OpenIeQuery): Set[REG] = {
-    val baselineQueryText = baselineQuery.getQueryString()
+  def runQuery(query: OpenIeQuery): Set[REG] = {
     val queryText = query.getQueryString()
-    solrExecutor.execute("(%s) OR (%s)".format(baselineQueryText, queryText)).toSet
+    println(queryText)
+    solrExecutor.execute(queryText).toSet
+  }
+  
+  def filterBaselineResults(baselineResults: Set[REG], results: Set[REG]): Set[REG] = {
+    results.diff(baselineResults)
+  }
+  
+  def filterRelationStrings(query: OpenIeQuery, results: Set[REG]): Set[REG] = {
+    val rels = query.getQueryRel.rels.get
+    results.filter({ result => rels.contains(result.rel.norm) })
   }
   
   /**
@@ -100,14 +109,15 @@ class RelationInferenceExperiment(solrUrl: String, inputDir: File, outputDir: Fi
    */
   def run(): Unit = {
     val baselineExpander = BaselineQueryExpander
-    val srlExpander = SrlQueryExpander
+//    val srlExpander = SrlQueryExpander
     val wordNetUtils = new WordNetUtils(WORDNET_PATH)
     val wordNetExpander = new WordNetQueryExpander(wordNetUtils)
-    val verbNetExpander = new VerbNetQueryExpander(RELATION_DB_PATH, wordNetUtils)
-    val cleanExpander = new CleanQueryExpander(RELATION_DB_PATH)
-    val queryExpanders: Seq[QueryExpander] = List(
-      baselineExpander, srlExpander, wordNetExpander, verbNetExpander, cleanExpander
-    )
+//    val verbNetExpander = new VerbNetQueryExpander(RELATION_DB_PATH, wordNetUtils)
+//    val cleanExpander = new CleanQueryExpander(RELATION_DB_PATH)
+//    val queryExpanders: Seq[QueryExpander] = List(
+//      baselineExpander, srlExpander, wordNetExpander, verbNetExpander, cleanExpander
+//    )
+    val queryExpanders: Seq[QueryExpander] = List(wordNetExpander)
     
     val benchmarkQueries = getTestQueries()
     val tags = getTags(TAGS_DIR)
@@ -118,15 +128,24 @@ class RelationInferenceExperiment(solrUrl: String, inputDir: File, outputDir: Fi
     val derbyHandler = new DerbyHandler(RELATION_DB_PATH)
     val entailmentGraph = new EntailmentGraphDb(derbyHandler);
     
+    val baselineResults = benchmarkQueries.flatMap({ benchmarkQuery =>
+      val baselineQuery = baselineExpander.expandQuery(benchmarkQuery)
+      val results = runQuery(baselineQuery)
+      filterRelationStrings(baselineQuery, results)
+    }).toSet
+      
     queryExpanders.foreach({ expander =>
       val systemName = expander.getName()
       benchmarkQueries.foreach({ benchmarkQuery =>
-        val baselineQuery = baselineExpander.expandQuery(benchmarkQuery)
         val query = expander.expandQuery(benchmarkQuery)
         val (groups, expansion) = if (query == null) {
           (Set.empty[REG], new QueryRel())
         } else {
-          (runQuery(baselineQuery, query), query.getQueryRel)
+          val results = filterRelationStrings(
+            query,
+            filterBaselineResults(baselineResults, runQuery(query))
+          )
+          (results, query.getQueryRel)
         }
         outputSentences(sentenceWriter, systemName, benchmarkQuery, expansion, groups, tags)
       })
