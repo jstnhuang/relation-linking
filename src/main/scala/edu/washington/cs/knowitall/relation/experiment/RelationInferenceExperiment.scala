@@ -15,6 +15,7 @@ import edu.washington.cs.knowitall.db.DerbyHandler
 import edu.washington.cs.knowitall.relation.EntailmentGraphDb
 import edu.washington.cs.knowitall.model.QueryArg
 import edu.mit.jwi.item.IWord
+import edu.washington.cs.knowitall.relation.PhraseNormalizer
 
 class RelationInferenceExperiment(solrUrl: String, inputDir: File, outputDir: File) {
   val solrExecutor = new SolrQueryExecutor(solrUrl)
@@ -74,7 +75,7 @@ class RelationInferenceExperiment(solrUrl: String, inputDir: File, outputDir: Fi
   
   def filterRelationStrings(query: OpenIeQuery, results: Set[REG]): Set[REG] = {
     val rels = query.getQueryRel.rels.get
-    results.filter({ result => rels.contains(result.rel.norm) })
+    results.filter({ result => rels.contains(PhraseNormalizer.normalize(result.rel.norm)) })
   }
   
   /**
