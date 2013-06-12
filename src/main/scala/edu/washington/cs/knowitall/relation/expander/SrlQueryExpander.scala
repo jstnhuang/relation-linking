@@ -22,22 +22,22 @@ object SrlQueryExpander extends QueryExpander {
     val (arg1Tags, relTags, arg2Tags) = QueryExpander.tagQuery(queryArg1, relString, queryArg2)
     val sentence = arg1Tags ++ relTags ++ arg2Tags
     val relInterval = Interval.span(relTags.map(_.interval))
-    val srlLinks = SrlRelationLinker.getRelationLinks(relTags, Some((sentence, relInterval)))
-    val preps = RelationPhraseFinder.getPrepositions(relTags)
-    val rels = if (!preps.isEmpty) {
-      Some(Set(preps.map(_.string).mkString(" ")))
-    } else {
-      None
-    }
-    if (srlLinks.isEmpty) {
-      System.err.println("No SRL senses for " + queryRel.getFirstRel.getOrElse("(None)"))
-      null
-    } else {
-      new OpenIeQuery(
-        queryArg1,
-        new QueryRel(rels=rels, srlLinks=Some(srlLinks)),
-        queryArg2
-      )
+    SrlRelationLinker.getRelationLinks(relTags, Some((sentence, relInterval))) match {
+      case Some((preHeadWords, srlLinks, postHeadWords)) => {
+        val entailingSenses = srlLinks.map({ sense =>
+          val srlLemma = "\\.".r.split(sense).take(1)
+          ((preHeadWords :+ srlLemma) ++ postHeadWords).mkString(" ")
+        })
+        new OpenIeQuery(
+          queryArg1,
+          new QueryRel(rels=Some(entailingSenses)),
+          queryArg2
+        )
+      }
+      case None => {
+        System.err.println("No SRL senses for " + queryRel.getFirstRel.getOrElse("(None)"))
+        null
+      }
     }
   }
 }

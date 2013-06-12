@@ -19,7 +19,7 @@ import edu.knowitall.openie.models.serialize.Chill
 
 class SolrQueryExecutor (solrUrl: String) extends QueryExecutor {
   val solr = new HttpSolrServer(solrUrl)
-  val kryo = Chill.createInjection()
+  val kryo = Chill.createBijection()
   
   /**
    * Query the Solr DB and return the results as an iterator.
@@ -40,11 +40,7 @@ class SolrQueryExecutor (solrUrl: String) extends QueryExecutor {
   def convertSolrDocument(solrDocument: SolrDocument): ExtractionGroup[ReVerbExtraction] = {
     val bytes = solrDocument.getFieldValue("instances").asInstanceOf[Array[Byte]]
     val instances: List[Instance[ReVerbExtraction]] =
-      kryo.invert(bytes).getOrElse(
-        throw new IllegalArgumentException(
-          "Could not deserialize instances: " + bytes.toSeq.toString
-        )
-      ).asInstanceOf[List[Instance[ReVerbExtraction]]]
+      kryo.invert(bytes).asInstanceOf[List[Instance[ReVerbExtraction]]]
     
     val arg1 = ExtractionArgument(
       norm = solrDocument.getFieldValue("arg1").asInstanceOf[String],

@@ -7,6 +7,7 @@ import edu.washington.cs.knowitall.WordNetUtils
 import edu.washington.cs.knowitall.relation.linker.WordNetRelationLinker
 import edu.washington.cs.knowitall.model.QueryRel
 import edu.washington.cs.knowitall.model.QueryArg
+import edu.mit.jwi.item.IWord
 
 /**
  * Expands the relation phrase of a query based on its WordNet sense.
@@ -24,30 +25,75 @@ class WordNetQueryExpander(wordNetUtils: WordNetUtils) extends QueryExpander {
     val relString = queryRel.getFirstRel.get
     val (arg1Tags, relTags, arg2Tags) = QueryExpander.tagQuery(queryArg1, relString, queryArg2)
     
-    val wordNetSenses = wordNetLinker.getWordRelationLinks(relTags, maxNumSenses=MAX_NUM_SENSES)
-    val preps = RelationPhraseFinder.getPrepositions(relTags)
-    val rels = if(!preps.isEmpty) {
-      Some(Set(preps.map(_.string).mkString(" ")))
-    } else {
-      None
+    wordNetLinker.getRelationLinks(relTags, maxNumSenses=100) match {
+      case Some((preHeadWords, wordNetSenses, postHeadWords)) => {
+        val preString = preHeadWords.mkString(" ")
+        val postString = postHeadWords.mkString(" ")
+        val entailingSenses = wordNetSenses.flatMap({ sense =>
+          val tc = transitiveClosure(sense)
+//        tc.foreach { closure => println(relString + "\t" + closure) }
+          tc.map(_.lastElement)
+        }).map({ word =>
+          List(preString, word.getLemma().replace("_", " "), postString).mkString(" ").trim()
+        })
+        
+        new OpenIeQuery(
+          queryArg1,
+          new QueryRel(rels=Some(entailingSenses)),
+          queryArg2
+        )
+      }
+      case None => {
+        System.err.println("No WordNet senses for " + queryRel.getFirstRel.getOrElse("(None)"))
+        null
+      }
+    }
+  }
+  
+  def transitiveClosure(word: IWord): Set[TransitiveClosurePath] = {
+    val queue = new scala.collection.mutable.Queue[TransitiveClosurePath]
+    queue += new TransitiveClosurePath(word, "identity")
+    var closure = Set.empty[TransitiveClosurePath]
+    
+    while (!queue.isEmpty) {
+      val currentPath = queue.dequeue
+      val lastElement = currentPath.lastElement()
+      val hyponyms = wordNetUtils.getHyponyms(lastElement)
+      val nextPaths = hyponyms
+          .filter(!currentPath.containsElement(_))
+          .map(currentPath.withElement(_, "hyponym"))
+      
+      closure = closure + currentPath
+      queue ++= nextPaths
     }
     
-    if (wordNetSenses.isEmpty) {
-      System.err.println("No WordNet senses for " + queryRel.getFirstRel.getOrElse("(None)"))
-      null
-    } else {
-      val entailingSenses = wordNetSenses.flatMap { sense =>
-        val synonyms = wordNetUtils.getSynonyms(sense)
-        val hyponyms = wordNetUtils.getHyponyms(sense)
-        synonyms ++ hyponyms
-      }.filter(wordNetUtils.getSenseNumber(_) <= MAX_NUM_SENSES).map({ sense => 
-        "%s#1".format(sense.getLemma())
-      })
-      new OpenIeQuery(
-        queryArg1,
-        new QueryRel(rels=rels, wnLinks=Some(entailingSenses)),
-        queryArg2
-      )
+    closure
+  }
+  
+  class TransitiveClosurePath(path: Seq[IWord], elementTypes: Map[IWord, String]) {    
+    def this(word: IWord, stepType: String) = {
+      this(Seq(word), Map(word -> stepType))
+    }
+    
+    def withElement(word: IWord, stepType: String) = {
+      new TransitiveClosurePath(path :+ word, elementTypes + (word -> stepType))
+    }
+    
+    def containsElement(word: IWord) = elementTypes.keySet.contains(word)
+    
+    def lastElement(): IWord = {
+      path.last
+    }
+    
+    override def toString(): String = {
+      path.map({ word =>
+        List(
+          wordNetUtils.wordToString(word, false, false),
+          wordNetUtils.getSenseNumber(word),
+          wordNetUtils.getTagCount(word),
+          elementTypes(word)
+        )
+      }).flatten.mkString("\t")
     }
   }
 }
