@@ -14,15 +14,16 @@ import scopt.OptionParser
 import edu.knowitall.openie.models.ReVerbExtractionGroup
 import edu.knowitall.openie.models.ReVerbInstanceSerializer
 import com.nicta.scoobi.core.Reduction
+import java.io.File
 
 /**
  * Hadoop job that links a Reverb extraction group to its SRL sense, WordNet sense, and VerbNet
  * sense.
  */
 object ReverbRelationLinker extends ScoobiApp {
-  val BASE_PATH = "/scratch2/rlinking/"
+  val BASE_PATH = new File("/scratch2/rlinking")
   val WORDNET_PATH = Constants.wordNetPath(BASE_PATH)
-  val VERBNET_PATH = Constants.relationLinkingDbPath(BASE_PATH)
+  val VERBNET_PATH = Constants.derbyDbUrl(new File(BASE_PATH, "relationlinking"))
   val srlLinker = SrlRelationLinker
   val wordNetUtils = new WordNetUtils(WORDNET_PATH)
   val wnLinker = new WordNetRelationLinker(wordNetUtils)
