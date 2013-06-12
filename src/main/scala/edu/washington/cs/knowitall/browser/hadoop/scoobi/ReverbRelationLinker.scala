@@ -30,19 +30,27 @@ object ReverbRelationLinker extends ScoobiApp {
   
   def getLinks(phrase: Seq[PostaggedToken], context: Option[(Seq[PostaggedToken], Interval)]):
       (Option[String], Option[String], Set[String]) = {
-    val srlLinks = srlLinker.getRelationLinks(phrase, context)
-    val wnLinks = wnLinker.getRelationLinks(phrase, context)
-    val vnLinks = vnLinker.getRelationLinks(phrase, context)
+    val srlLinksOpt = srlLinker.getRelationLinks(phrase, context)
+    val wnLinksOpt = wnLinker.getRelationLinks(phrase, context)
+    val vnLinksOpt = vnLinker.getRelationLinks(phrase, context)
     
-    val srlLink = if (!srlLinks.isEmpty) {
-      Some(srlLinks.head)
-    } else {
-      None
+    val srlLink = srlLinksOpt match {
+      case Some((preHeadWords, links, postHeadWords)) => {
+        Some(links.head)
+      }
+      case None => None
     }
-    val wnLink = if (!wnLinks.isEmpty) {
-      Some(wnLinks.head)
-    } else {
-      None
+    val wnLink = wnLinksOpt match {
+      case Some((preHeadWords, links, postHeadWords)) => {
+        Some(wordNetUtils.wordToString(links.head))
+      }
+      case None => None
+    }
+    val vnLinks = vnLinksOpt match {
+      case Some((preHeadWords, links, postHeadWords)) => {
+        links
+      }
+      case None => Set.empty[String]
     }
     (srlLink, wnLink, vnLinks)
   }

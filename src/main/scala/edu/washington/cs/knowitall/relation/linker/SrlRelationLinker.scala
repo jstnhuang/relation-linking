@@ -7,18 +7,24 @@ import edu.knowitall.tool.srl.ClearSrl
 import edu.knowitall.tool.parse.ClearParser
 import edu.washington.cs.knowitall.relation.RelationPhraseFinder
 import edu.knowitall.collection.immutable.Interval
+import edu.washington.cs.knowitall.relation.PhraseNormalizer
 
 /**
  * Uses the Clear semantic role labeling system to link the head verb of the relation phrase.
  */
-object SrlRelationLinker extends RelationLinker {
+object SrlRelationLinker {
   val clearParser = new ClearParser()
   val clearSrl = new ClearSrl()
   
   def getRelationLinks(
       phrase: Seq[PostaggedToken],
-      context: Option[(Seq[PostaggedToken], Interval)]): Set[String] = {
-    val headPhrase = RelationPhraseFinder.getHeadPhrase(phrase)
+      context: Option[(Seq[PostaggedToken], Interval)]):
+      Option[(Seq[String], Set[String], Seq[String])] = {
+    val (headPhrase, headIndex) = RelationPhraseFinder.getHeadPhrase(phrase)
+    val words = phrase.map(_.string).map(PhraseNormalizer.normalize(_))
+    val preHeadWords = words.take(headIndex)
+    val postHeadWords = words.drop(headIndex)
+    
     val (sentence, interval) = context match {
       case Some((sent, interval)) => (sent, interval)
       case None => (
@@ -34,9 +40,9 @@ object SrlRelationLinker extends RelationLinker {
       firstVerb == frame.relation.node.text
     })
     if (frameIndex < 0) {
-      Set.empty[String]
+      None
     } else {
-      Set(frames(frameIndex).relation.toString())
+      Some((preHeadWords, Set(frames(frameIndex).relation.toString()), postHeadWords))
     }
   }
 }

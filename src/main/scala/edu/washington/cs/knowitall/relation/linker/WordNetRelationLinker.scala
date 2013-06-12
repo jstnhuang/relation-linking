@@ -18,29 +18,7 @@ import edu.mit.jwi.item.IWord
  * Links verb phrases to WordNet senses. Currently just links to the most frequent WordNet sense of
  * a phrase/word.
  */
-class WordNetRelationLinker(wordNetUtils: WordNetUtils)
-    extends RelationLinker {
-  /**
-   * Same as getRelationLinks, but returns IWords instead of Strings.
-   */
-  def getWordRelationLinks(
-      phrase: Seq[PostaggedToken],
-      context: Option[(Seq[PostaggedToken], Interval)] = None,
-      maxNumSenses: Integer = 3): Set[IWord] = {
-    val headPhrase = RelationPhraseFinder.getHeadPhrase(phrase);
-    var words = headPhrase.map(_.string).map(word => PhraseNormalizer.normalize(word))
-    var wordNetSenses = Set.empty[IWord]
-    while(words.size > 0 && wordNetSenses.isEmpty) {
-      var currentPhrase = words.mkString(" ")
-      val wordSenses = wordNetUtils.getWordSenses(currentPhrase, POS.VERB);
-      if (wordSenses != null) {
-        wordNetSenses = wordSenses.take(maxNumSenses).toSet
-      }
-      words = words.dropRight(1)
-    }
-    wordNetSenses
-  }
-  
+class WordNetRelationLinker(wordNetUtils: WordNetUtils) {
   /**
    * Gets the most frequent WordNet sense of the phrase. If the phrase is not found in WordNet, chop
    * off the last word and try again. Returns the empty set if no WordNet senses found at all. If
@@ -48,8 +26,41 @@ class WordNetRelationLinker(wordNetUtils: WordNetUtils)
    */
   def getRelationLinks(
       phrase: Seq[PostaggedToken],
-      context: Option[(Seq[PostaggedToken], Interval)] = None): Set[String] = {
-    val wordNetSenses = getWordRelationLinks(phrase, context)
-    wordNetSenses.map(wordNetUtils.wordToString(_))
+      context: Option[(Seq[PostaggedToken], Interval)] = None,
+      maxNumSenses: Integer = 3): Option[(Seq[String], Set[IWord], Seq[String])] = {
+    val (headPhrase, headIndex) = RelationPhraseFinder.getHeadPhrase(phrase)
+    val words = phrase.map(_.string).map(PhraseNormalizer.normalize(_))
+    val preHeadWords = words.take(headIndex)
+    val headWords = words.drop(headIndex)
+    
+    /**
+     * Check if the given subphrase exists as a verb in WordNet. If so, return it. Otherwise, chop
+     * off the rightmost word and search again.
+     */
+    def checkSubstring(subphrase: Seq[String]): Option[Seq[String]] = {
+      if (subphrase.size == 0) {
+        None
+      } else {
+        val currentPhrase = subphrase.mkString(" ")
+        val wordSenses = wordNetUtils.getWordSenses(currentPhrase, POS.VERB);
+        if (wordSenses != null) {
+          Some(subphrase)
+        } else {
+          checkSubstring(subphrase.dropRight(1))
+        }
+      }
+    }
+    
+    val subphraseOption = checkSubstring(headWords)
+    subphraseOption match {
+      case Some(subphrase) => {
+        val currentPhrase = subphrase.mkString(" ")
+        val wordSenses = wordNetUtils.getWordSenses(currentPhrase, POS.VERB);
+        val wordNetSenses = wordSenses.take(maxNumSenses).toSet
+        val postHeadWords = words.drop(headIndex + subphrase.size)
+        Some((preHeadWords, wordNetSenses, postHeadWords))
+      }
+      case None => None
+    }
   }
 }

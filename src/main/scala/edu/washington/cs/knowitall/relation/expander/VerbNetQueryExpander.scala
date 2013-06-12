@@ -33,45 +33,50 @@ class VerbNetQueryExpander(verbNetDbPath: String, wordNetUtils: WordNetUtils)
     val (arg1Tags, relTags, arg2Tags) = QueryExpander.tagQuery(queryArg1, relString, queryArg2)
     
     // Find VerbNet senses for this query.
-    val verbNetSenses = verbNetLinker.getRelationLinks(relTags)
-    
-    val preps = RelationPhraseFinder.getPrepositions(relTags)
-    val rels = if (!preps.isEmpty) {
-      Some(Set(relTags.map(_.string).mkString(" ")))
-    } else {
-      None
-    }
-    
-    if (verbNetSenses.isEmpty) {
-      System.err.println(
-        "No entailed VerbNet senses for " + queryRel.getFirstRel.getOrElse("(None)")
-      )
-      null
-    } else {
-      // Find all entailing VerbNet senses.
-      val queryString = (
-        "SELECT vn1 FROM vn_to_vn WHERE vn2 IN ("
-        + verbNetSenses.toSeq.map(_ => "?").mkString(", ") + ")"
-      )
-      val selectStatement = derbyHandler.prepareStatement(queryString)
-      var index=1;
-      verbNetSenses.foreach({ verbNetSense =>
-        selectStatement.setString(index, verbNetSense)
-        index += 1
-      })
-      
-      val results = derbyHandler.query(selectStatement)
-      var entailingSenses = Set[String]()
-      while(results.next()) {
-        val entailingSense = results.getString(1)
-        entailingSenses += entailingSense
+    verbNetLinker.getRelationLinks(relTags) match {
+      case Some((preHeadWords, verbNetSenses, postHeadWords)) => {
+        // Find all entailing VerbNet senses.
+        val queryString = (
+          "SELECT vn1 FROM vn_to_vn WHERE vn2 IN ("
+          + verbNetSenses.toSeq.map(_ => "?").mkString(", ") + ")"
+        )
+        val selectStatement = derbyHandler.prepareStatement(queryString)
+        var index=1;
+        verbNetSenses.foreach({ verbNetSense =>
+          selectStatement.setString(index, verbNetSense)
+          index += 1
+        })
+        
+        val results = derbyHandler.query(selectStatement)
+        var entailingSenses = Set[String]()
+        while(results.next()) {
+          val entailingSense = results.getString(1)
+          entailingSenses += entailingSense
+        }
+        
+        val rels = entailingSenses.map({ sense =>
+          val verbNetLemma = parseVerbNetSense(sense)
+          ((preHeadWords :+ verbNetLemma) ++ postHeadWords).mkString(" ")
+        })
+        
+        new OpenIeQuery(
+          queryArg1,
+          new QueryRel(rels=Some(rels)),
+          queryArg2
+        )
       }
-      
-      new OpenIeQuery(
-        queryArg1,
-        new QueryRel(rels=rels, vnLinks=Some(entailingSenses)),
-        queryArg2
-      )
+      case None => {
+        System.err.println(
+          "No entailed VerbNet senses for " + queryRel.getFirstRel.getOrElse("(None)")
+        )
+        null
+      }
     }
+  }
+  
+  def parseVerbNetSense(verbNetSense: String): String = {
+    "_".r.split(verbNetSense).flatMap({ word =>
+      "-".r.split(word).take(1)
+    }).mkString(" ")
   }
 }
