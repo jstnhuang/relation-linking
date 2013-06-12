@@ -16,10 +16,10 @@ import edu.washington.cs.knowitall.relation.EntailmentGraphDb
 import edu.washington.cs.knowitall.model.QueryArg
 import edu.mit.jwi.item.IWord
 
-class RelationInferenceExperiment(solrUrl: String, inputDir: String, outputDir: String) {
+class RelationInferenceExperiment(solrUrl: String, inputDir: File, outputDir: File) {
   val solrExecutor = new SolrQueryExecutor(solrUrl)
   val WORDNET_PATH = Constants.wordNetPath(inputDir)
-  val RELATION_DB_PATH = Constants.relationLinkingDbPath("/scratch2/rlinking")
+  val RELATION_DB_PATH = Constants.derbyDbUrl(new File(inputDir, "relationlinking"))
   val BENCHMARK_QUERIES_FILE = new File(inputDir, "benchmark-queries.tsv")
   val TAGS_DIR = new File(inputDir, "tags")
   val SENTENCES_FILE = new File(outputDir, "sentences.tsv")
@@ -151,7 +151,9 @@ object RelationInferenceExperiment {
       return
     }
     
-    val experiment = new RelationInferenceExperiment(solrUrl, inputDir, outputDir)
+    val experiment = new RelationInferenceExperiment(
+      solrUrl, new File(inputDir), new File(outputDir)
+    )
     experiment.run()
   }
 }

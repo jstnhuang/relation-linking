@@ -10,12 +10,11 @@ import edu.mit.jwi.item.Pointer
 import edu.mit.jwi.item.IIndexWord
 import edu.mit.jwi.item.IWordID
 
-class WordNetUtils(wordNetPath: String) {
+class WordNetUtils(wordNetPath: File) {
   val wordNet = loadFromPath(wordNetPath)
   
-  def loadFromPath(path: String): IDictionary = {
-    val f = new File(path)
-    val wordNet = new Dictionary(new File(path))
+  def loadFromPath(path: File): IDictionary = {
+    val wordNet = new Dictionary(path)
     wordNet.open()
     wordNet
   }
