@@ -9,7 +9,7 @@ import edu.knowitall.tool.postag.PostaggedToken
 object RelationPhraseFinder {
   def getHeadPhrase(relTags: Seq[PostaggedToken]): (Seq[PostaggedToken], Integer) = {
     val index = relTags.lastIndexWhere(token => token.isVerb)
-    if (index > 0) {
+    if (index >= 0) {
       (relTags.drop(index), index)
     } else {
       (Seq.empty[PostaggedToken], index)
