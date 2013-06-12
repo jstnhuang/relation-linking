@@ -18,14 +18,13 @@ import edu.mit.jwi.item.IWord
  * Links verb phrases to WordNet senses. Currently just links to the most frequent WordNet sense of
  * a phrase/word.
  */
-class WordNetRelationLinker(wordNetUtils: WordNetUtils)
-    extends RelationLinker {
+class WordNetRelationLinker(wordNetUtils: WordNetUtils) {
   /**
    * Gets the most frequent WordNet sense of the phrase. If the phrase is not found in WordNet, chop
    * off the last word and try again. Returns the empty set if no WordNet senses found at all. If
    * there is a WordNet sense, it will return the longest one.
    */
-  def getWordRelationLinks(
+  def getRelationLinks(
       phrase: Seq[PostaggedToken],
       context: Option[(Seq[PostaggedToken], Interval)] = None,
       maxNumSenses: Integer = 3): Option[(Seq[String], Set[IWord], Seq[String])] = {
@@ -62,20 +61,6 @@ class WordNetRelationLinker(wordNetUtils: WordNetUtils)
         Some((preHeadWords, wordNetSenses, postHeadWords))
       }
       case None => None
-    }
-  }
-  
-  /**
-   * Same as getWordRelationLinks, but returns Strings instead of IWords.
-   */
-  def getRelationLinks(
-      phrase: Seq[PostaggedToken],
-      context: Option[(Seq[PostaggedToken], Interval)] = None): Set[String] = {
-    getWordRelationLinks(phrase, context) match {
-      case Some((preHeadWords, wordNetSenses, postHeadWords)) => {
-        wordNetSenses.map(wordNetUtils.wordToString(_))
-      }
-      case None => Set.empty[String]
     }
   }
 }

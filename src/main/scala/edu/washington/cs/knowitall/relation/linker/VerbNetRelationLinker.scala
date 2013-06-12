@@ -13,7 +13,7 @@ import edu.washington.cs.knowitall.relation.linker.EntailmentDirection._
  * You also need to have WordNet in basePath.
  */
 class VerbNetRelationLinker(verbNetDbPath: String, wordNetUtils: WordNetUtils,
-    direction: EntailmentDirection) extends RelationLinker {
+    direction: EntailmentDirection) {
   val derbyHandler = new DerbyHandler(verbNetDbPath)
   val wordNetLinker = new WordNetRelationLinker(wordNetUtils)
   
@@ -24,9 +24,9 @@ class VerbNetRelationLinker(verbNetDbPath: String, wordNetUtils: WordNetUtils,
    */
   def getRelationLinks(
       phrase: Seq[PostaggedToken],
-      context: Option[(Seq[PostaggedToken], Interval)] = None): Set[String] = {
-    val wordNetSenses = wordNetLinker.getWordRelationLinks(phrase)
-    wordNetLinker.getWordRelationLinks(phrase, maxNumSenses=100) match {
+      context: Option[(Seq[PostaggedToken], Interval)] = None):
+      Option[(Seq[String], Set[String], Seq[String])] = {
+    wordNetLinker.getRelationLinks(phrase, maxNumSenses=100) match {
       case Some((preHeadWords, wordNetSenses, postHeadWords)) => {
         val synonyms = wordNetSenses.flatMap(wordNetUtils.getSynonyms(_))
         val others = if (direction == Hypernym) {
@@ -42,7 +42,7 @@ class VerbNetRelationLinker(verbNetDbPath: String, wordNetUtils: WordNetUtils,
         
         var relationLinks = Set[String]()
         if (senses.size == 0) {
-          relationLinks
+          None
         } else {
           val selectStatement = derbyHandler.prepareStatement(
             "SELECT vn FROM wn_to_vn WHERE wn IN ("
@@ -60,10 +60,10 @@ class VerbNetRelationLinker(verbNetDbPath: String, wordNetUtils: WordNetUtils,
             relationLinks += verbNetSense
           }
           selectStatement.close()
-          relationLinks
+          Some(preHeadWords, relationLinks, postHeadWords)
         }
       }
-      case None => Set.empty[String]
+      case None => None
     }
   }
 }
