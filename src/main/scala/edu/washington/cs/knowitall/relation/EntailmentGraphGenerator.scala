@@ -10,7 +10,7 @@ import scopt.OptionParser
 import java.io.FileWriter
 import edu.washington.cs.knowitall.model.VerbNetSense
 
-class EntailmentGraphGenerator(vnToWnPath: String, wnToVnPath: String, wordNetPath: String) {
+class EntailmentGraphGenerator(vnToWnPath: File, wnToVnPath: File, wordNetPath: File) {
   val wordNetUtils = new WordNetUtils(wordNetPath)
   val vnToWn = processVnToWn()
   val wnToVn = processWnToVn()
@@ -205,9 +205,9 @@ object EntailmentGraphGenerator {
     }
     if (!parser.parse(args)) return
     
-    val wordNetPath = List(inputDir, "WordNet-3.0", "dict").mkString(File.separator)
-    val vnToWnPath = List(inputDir, "vn-wn.tsv").mkString(File.separator)
-    val wnToVnPath = List(inputDir, "wn-vn.tsv").mkString(File.separator)
+    val wordNetPath = new File(new File(inputDir, "WordNet-3.0"), "dict")
+    val vnToWnPath = new File(inputDir, "vn-wn.tsv")
+    val wnToVnPath = new File(inputDir, "wn-vn.tsv")
     
     val traceWriterPath = List(outputDir, "vn_trace.txt").mkString(File.separator)
     val graphWriterPath = List(outputDir, "vn_to_vn.txt").mkString(File.separator)
