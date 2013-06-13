@@ -15,6 +15,7 @@ import edu.washington.cs.knowitall.db.DerbyHandler
 import edu.washington.cs.knowitall.relation.EntailmentGraphDb
 import edu.washington.cs.knowitall.model.QueryArg
 import edu.mit.jwi.item.IWord
+import edu.washington.cs.knowitall.relation.PhraseNormalizer
 
 class RelationInferenceExperiment(solrUrl: String, inputDir: File, outputDir: File) {
   val solrExecutor = new SolrQueryExecutor(solrUrl)
@@ -62,10 +63,20 @@ class RelationInferenceExperiment(solrUrl: String, inputDir: File, outputDir: Fi
     tags
   }
   
-  def runQuery(baselineQuery: OpenIeQuery, query: OpenIeQuery): Set[REG] = {
-    val baselineQueryText = baselineQuery.getQueryString()
+  def runQuery(query: OpenIeQuery): Set[REG] = {
     val queryText = query.getQueryString()
-    solrExecutor.execute("(%s) OR (%s)".format(baselineQueryText, queryText)).toSet
+    solrExecutor.execute(queryText).toSet
+  }
+  
+  def filterBaselineResults(baselineResults: Set[REG], results: Set[REG]): Set[REG] = {
+    results.diff(baselineResults)
+  }
+  
+  def filterRelationStrings(query: OpenIeQuery, results: Set[REG]): Set[REG] = {
+    val rels = query.getQueryRel.rels.get
+    results.filter({ result =>
+      rels.contains(PhraseNormalizer.normalize(result.rel.norm))
+    })
   }
   
   /**
@@ -118,15 +129,25 @@ class RelationInferenceExperiment(solrUrl: String, inputDir: File, outputDir: Fi
     val derbyHandler = new DerbyHandler(RELATION_DB_PATH)
     val entailmentGraph = new EntailmentGraphDb(derbyHandler);
     
+    val baselineResults = benchmarkQueries.flatMap({ benchmarkQuery =>
+      val baselineQuery = baselineExpander.expandQuery(benchmarkQuery)
+      val results = filterRelationStrings(baselineQuery, runQuery(baselineQuery))
+      outputSentences(sentenceWriter, "Baseline", benchmarkQuery, baselineQuery.getQueryRel, results, tags);
+      results
+    }).toSet
+      
     queryExpanders.foreach({ expander =>
       val systemName = expander.getName()
       benchmarkQueries.foreach({ benchmarkQuery =>
-        val baselineQuery = baselineExpander.expandQuery(benchmarkQuery)
         val query = expander.expandQuery(benchmarkQuery)
         val (groups, expansion) = if (query == null) {
           (Set.empty[REG], new QueryRel())
         } else {
-          (runQuery(baselineQuery, query), query.getQueryRel)
+          val results = filterBaselineResults(
+            baselineResults,
+            filterRelationStrings(query, runQuery(query))
+          )
+          (results, query.getQueryRel)
         }
         outputSentences(sentenceWriter, systemName, benchmarkQuery, expansion, groups, tags)
       })
