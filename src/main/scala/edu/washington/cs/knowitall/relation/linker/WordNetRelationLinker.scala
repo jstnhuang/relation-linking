@@ -31,7 +31,7 @@ class WordNetRelationLinker(wordNetUtils: WordNetUtils) {
     val (headPhrase, headIndex) = RelationPhraseFinder.getHeadPhrase(phrase)
     val words = phrase.map(_.string).map(PhraseNormalizer.normalize(_))
     val preHeadWords = words.take(headIndex)
-    val headWords = words.drop(headIndex)
+    val headWords = headPhrase.map(_.string).map(PhraseNormalizer.normalize(_))
     
     /**
      * Check if the given subphrase exists as a verb in WordNet. If so, return it. Otherwise, chop
