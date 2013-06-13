@@ -32,17 +32,21 @@ object SrlRelationLinker {
         Interval.span(headPhrase.map(_.interval))
       )
     }
-    val firstVerb = headPhrase(0).string
-    val text = sentence.map(_.string).mkString(" ")
-    val graph = clearParser.dependencyGraph(text)
-    val frames = clearSrl(graph)
-    val frameIndex = frames.lastIndexWhere({ frame =>
-      firstVerb == frame.relation.node.text
-    })
-    if (frameIndex < 0) {
+    if (headPhrase.isEmpty) {
       None
     } else {
-      Some((preHeadWords, Set(frames(frameIndex).relation.toString()), postHeadWords))
+      val firstVerb = headPhrase(0).string
+      val text = sentence.map(_.string).mkString(" ")
+      val graph = clearParser.dependencyGraph(text)
+      val frames = clearSrl(graph)
+      val frameIndex = frames.lastIndexWhere({ frame =>
+        firstVerb == frame.relation.node.text
+      })
+      if (frameIndex < 0) {
+        None
+      } else {
+        Some((preHeadWords, Set(frames(frameIndex).relation.toString()), postHeadWords))
+      }
     }
   }
 }
