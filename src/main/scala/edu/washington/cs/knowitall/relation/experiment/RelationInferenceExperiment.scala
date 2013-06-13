@@ -65,7 +65,6 @@ class RelationInferenceExperiment(solrUrl: String, inputDir: File, outputDir: Fi
   
   def runQuery(query: OpenIeQuery): Set[REG] = {
     val queryText = query.getQueryString()
-    println(queryText)
     solrExecutor.execute(queryText).toSet
   }
   
@@ -75,7 +74,9 @@ class RelationInferenceExperiment(solrUrl: String, inputDir: File, outputDir: Fi
   
   def filterRelationStrings(query: OpenIeQuery, results: Set[REG]): Set[REG] = {
     val rels = query.getQueryRel.rels.get
-    results.filter({ result => rels.contains(PhraseNormalizer.normalize(result.rel.norm)) })
+    results.filter({ result =>
+      rels.contains(PhraseNormalizer.normalize(result.rel.norm))
+    })
   }
   
   /**
@@ -110,15 +111,14 @@ class RelationInferenceExperiment(solrUrl: String, inputDir: File, outputDir: Fi
    */
   def run(): Unit = {
     val baselineExpander = BaselineQueryExpander
-//    val srlExpander = SrlQueryExpander
+    val srlExpander = SrlQueryExpander
     val wordNetUtils = new WordNetUtils(WORDNET_PATH)
     val wordNetExpander = new WordNetQueryExpander(wordNetUtils)
-//    val verbNetExpander = new VerbNetQueryExpander(RELATION_DB_PATH, wordNetUtils)
-//    val cleanExpander = new CleanQueryExpander(RELATION_DB_PATH)
-//    val queryExpanders: Seq[QueryExpander] = List(
-//      baselineExpander, srlExpander, wordNetExpander, verbNetExpander, cleanExpander
-//    )
-    val queryExpanders: Seq[QueryExpander] = List(wordNetExpander)
+    val verbNetExpander = new VerbNetQueryExpander(RELATION_DB_PATH, wordNetUtils)
+    val cleanExpander = new CleanQueryExpander(RELATION_DB_PATH)
+    val queryExpanders: Seq[QueryExpander] = List(
+      baselineExpander, srlExpander, wordNetExpander, verbNetExpander, cleanExpander
+    )
     
     val benchmarkQueries = getTestQueries()
     val tags = getTags(TAGS_DIR)
@@ -131,8 +131,9 @@ class RelationInferenceExperiment(solrUrl: String, inputDir: File, outputDir: Fi
     
     val baselineResults = benchmarkQueries.flatMap({ benchmarkQuery =>
       val baselineQuery = baselineExpander.expandQuery(benchmarkQuery)
-      val results = runQuery(baselineQuery)
-      filterRelationStrings(baselineQuery, results)
+      val results = filterRelationStrings(baselineQuery, runQuery(baselineQuery))
+      outputSentences(sentenceWriter, "Baseline", benchmarkQuery, baselineQuery.getQueryRel, results, tags);
+      results
     }).toSet
       
     queryExpanders.foreach({ expander =>
@@ -142,9 +143,9 @@ class RelationInferenceExperiment(solrUrl: String, inputDir: File, outputDir: Fi
         val (groups, expansion) = if (query == null) {
           (Set.empty[REG], new QueryRel())
         } else {
-          val results = filterRelationStrings(
-            query,
-            filterBaselineResults(baselineResults, runQuery(query))
+          val results = filterBaselineResults(
+            baselineResults,
+            filterRelationStrings(query, runQuery(query))
           )
           (results, query.getQueryRel)
         }
