@@ -26,7 +26,7 @@ class VerbNetRelationLinker(verbNetDbPath: String, wordNetUtils: WordNetUtils,
       phrase: Seq[PostaggedToken],
       context: Option[(Seq[PostaggedToken], Interval)] = None):
       Option[(Seq[String], Set[String], Seq[String])] = {
-    wordNetLinker.getRelationLinks(phrase, maxNumSenses=100) match {
+    wordNetLinker.getRelationLinks(phrase) match {
       case Some((preHeadWords, wordNetSenses, postHeadWords)) => {
         val synonyms = wordNetSenses.flatMap(wordNetUtils.getSynonyms(_))
         val others = if (direction == Hypernym) {
